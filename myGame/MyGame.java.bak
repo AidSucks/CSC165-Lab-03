@@ -1,29 +1,49 @@
 package myGame;
 
-import tage.*;
-import tage.shapes.*;
+import tage. * ;
+import tage.shapes. * ;
 
+import java.util.ArrayList;
 import java.lang.Math;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import javax.swing.*;
-import org.joml.*;
+import java.awt. * ;
+import java.awt.event. * ;
+import java.io. * ;
+import javax.swing. * ;
+import org.joml. * ;
+
+import tage.input. * ;
+import tage.input.action. * ;
+import net.java.games.input. * ;
+import net.java.games.input.Component.Identifier. * ;
+import java.util.ArrayList;
+import tage.nodeControllers. * ;
 
 public class MyGame extends VariableFrameRateGame
 {
 	private static Engine engine;
+	private InputManager im;
 
 	private boolean paused=false;
 	private int counter=0;
 	private double lastFrameTime, currFrameTime, elapsTime;
 	private int fluffyClouds, lakeIslands, mars; // skyboxes 
-
-
-	private GameObject dol;
+	
+	// object
+	private GameObject avatar;
+	// shape
 	private ObjShape dolS;
+	// texture
 	private TextureImage doltx;
+	// light
 	private Light light1;
+	
+	// Camera
+	private CameraOrbit3D orbitCamera;
+	private Camera leftCamera, rightCamera;
+	
+	// viewport
+	private Viewport leftVp;
+    private Viewport rightVp;
 
 	public MyGame() { super(); }
 
@@ -47,23 +67,24 @@ public class MyGame extends VariableFrameRateGame
 	
 	@Override 
 	public void loadSkyBoxes() 
-	{ fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds"); 
-	  lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands"); 
-	  mars = (engine.getSceneGraph()).loadCubeMap("mars"); 
-	  (engine.getSceneGraph()).setActiveSkyBoxTexture(mars); 
-	  (engine.getSceneGraph()).setSkyBoxEnabled(true); 
+	{
+		fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds"); 
+		lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands"); 
+		mars = (engine.getSceneGraph()).loadCubeMap("mars"); 
+		(engine.getSceneGraph()).setActiveSkyBoxTexture(mars); 
+		(engine.getSceneGraph()).setSkyBoxEnabled(true); 
 	} 
 
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale;
 
-		// build dolphin in the center of the window
-		dol = new GameObject(GameObject.root(), dolS, doltx);
+		// build avatar
+		avatar = new GameObject(GameObject.root(), dolS, doltx);
 		initialTranslation = (new Matrix4f()).translation(0,0,0);
 		initialScale = (new Matrix4f()).scaling(3.0f);
-		dol.setLocalTranslation(initialTranslation);
-		dol.setLocalScale(initialScale);
+		avatar.setLocalTranslation(initialTranslation);
+		avatar.setLocalScale(initialScale);
 	}
 
 	@Override
@@ -73,6 +94,33 @@ public class MyGame extends VariableFrameRateGame
 		light1.setLocation(new Vector3f(5.0f, 4.0f, 2.0f));
 		(engine.getSceneGraph()).addLight(light1);
 	}
+	
+	@ Override
+    public void createViewports() {
+
+        // ------------- viewport -------------
+        (engine.getRenderSystem()).addViewport("LEFT", 0, 0, 1f, 1f);
+        (engine.getRenderSystem()).addViewport("RIGHT", .75f, 0, .25f, .25f);
+
+        leftVp = (engine.getRenderSystem()).getViewport("LEFT");
+        rightVp = (engine.getRenderSystem()).getViewport("RIGHT");
+
+        leftCamera = leftVp.getCamera();
+        rightCamera = rightVp.getCamera();
+
+        rightVp.setHasBorder(true);
+        rightVp.setBorderWidth(4);
+        rightVp.setBorderColor(0.0f, 1.0f, 0.0f);
+
+        // ------------- positioning the camera -------------
+        leftCamera.setU(new Vector3f(1, 0, 0));
+        leftCamera.setV(new Vector3f(0, 1, 0));
+        leftCamera.setN(new Vector3f(0, 0, -1));
+
+        rightCamera.setU(new Vector3f(1, 0, 0));
+        rightCamera.setV(new Vector3f(0, 0, -1));
+        rightCamera.setN(new Vector3f(0, -1, 0));
+    }
 
 	@Override
 	public void initializeGame()
@@ -80,9 +128,20 @@ public class MyGame extends VariableFrameRateGame
 		currFrameTime = System.currentTimeMillis();
 		elapsTime = 0.0;
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
+		
+		im = engine.getInputManager();
+		orbitCamera = new CameraOrbit3D(leftCamera, avatar);
+		
+		// ----------------- INPUTS SECTION -----------------------------
+		OrbitAzimuthAction azmAction = new OrbitAzimuthAction(this, orbitCamera);
+        OrbitElevationAction altAction = new OrbitElevationAction(this, orbitCamera);
+        OrbitRadiusAction zoomAction = new OrbitRadiusAction(this, orbitCamera);
+		
+		// ----------------- CameraOrbit3D SECTION -----------------------------
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RX, azmAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RY, altAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RZ, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 
-		// ------------- positioning the camera -------------
-		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
 	}
 
 	@Override
@@ -90,8 +149,14 @@ public class MyGame extends VariableFrameRateGame
 	{	// rotate dolphin if not paused
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
+		float dt = (float)((currFrameTime - lastFrameTime) / 1000.0);
+		
+		im.update(dt);
+		
+		// elapsTime += dt;
 		if (!paused) elapsTime += (currFrameTime - lastFrameTime) / 1000.0;
-		dol.setLocalRotation((new Matrix4f()).rotation((float)elapsTime, 0, 1, 0));
+		avatar.setLocalRotation((new Matrix4f()).rotation((float)elapsTime, 0, 1, 0));
+		
 
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
@@ -103,6 +168,9 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f hud2Color = new Vector3f(0,0,1);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
+		
+		orbitCamera.updateCameraPosition();
+
 	}
 
 	@Override
@@ -115,10 +183,10 @@ public class MyGame extends VariableFrameRateGame
 				paused = !paused;
 				break;
 			case KeyEvent.VK_2:
-				dol.getRenderStates().setWireframe(true);
+				avatar.getRenderStates().setWireframe(true);
 				break;
 			case KeyEvent.VK_3:
-				dol.getRenderStates().setWireframe(false);
+				avatar.getRenderStates().setWireframe(false);
 				break;
 			case KeyEvent.VK_4:
 				(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,0));
