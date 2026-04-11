@@ -426,7 +426,7 @@ public class GameObject
         newRotation;
         Vector4f oldUp;
 
-        // System.out.println("yaw called: " + amount);
+        System.out.println("yaw called: " + amount);
 
         oldRotation = new Matrix4f(this.getWorldRotation());
         rotAroundAvatarUp = new Matrix4f().rotateY(amount);
@@ -464,9 +464,9 @@ public class GameObject
 		
 		pitchAngle += delta;
 		
-		// System.out.println("DOLPHIN pitch called pitchAngle: " + pitchAngle);
-		// System.out.println("DOLPHIN pitch called delta: " + delta);
-        // System.out.println("DOLPHIN pitch called: " + amount);
+		System.out.println("DOLPHIN pitch called pitchAngle: " + pitchAngle);
+		System.out.println("DOLPHIN pitch called delta: " + delta);
+        System.out.println("DOLPHIN pitch called: " + amount);
 
         oldRotation = new Matrix4f(this.getWorldRotation());
         oldRight = new Vector4f(1f, 0f, 0f, 1f).mul(oldRotation);

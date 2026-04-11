@@ -22,16 +22,22 @@ public class MyGame extends VariableFrameRateGame
 {
 	private static Engine engine;
 	private InputManager im;
-
+	
+	private boolean isxyzAxesVisible = true;
 	private boolean paused=false;
+	
 	private int counter=0;
 	private double lastFrameTime, currFrameTime, elapsTime;
 	private int fluffyClouds, lakeIslands, mars; // skyboxes 
 	
 	// object
-	private GameObject avatar;
+	private GameObject avatar,    x,
+    y,
+    z;
 	// shape
-	private ObjShape dolS;
+	private ObjShape dolS,    linxS,
+    linyS,
+    linzS;
 	// texture
 	private TextureImage doltx;
 	// light
@@ -44,6 +50,7 @@ public class MyGame extends VariableFrameRateGame
 	// viewport
 	private Viewport leftVp;
     private Viewport rightVp;
+	private Vector3f overheadView = new Vector3f(0, 18, 0);
 
 	public MyGame() { super(); }
 
@@ -58,6 +65,9 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes()
 	{	dolS = new ImportedModel("dolphinHighPoly.obj");
+		linxS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(3f, 0f, 0f));
+        linyS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 3f, 0f));
+        linzS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, -3f));
 	}
 
 	@Override
@@ -85,6 +95,17 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(3.0f);
 		avatar.setLocalTranslation(initialTranslation);
 		avatar.setLocalScale(initialScale);
+		
+		// X,Y,-Z axes
+        x = new GameObject(GameObject.root(), linxS);
+        y = new GameObject(GameObject.root(), linyS);
+        z = new GameObject(GameObject.root(), linzS);
+        x.getRenderStates().isTransparent(true);
+        y.getRenderStates().isTransparent(true);
+        z.getRenderStates().isTransparent(true);
+        (x.getRenderStates()).setColor(new Vector3f(1f, 0f, 0f));
+        (y.getRenderStates()).setColor(new Vector3f(0f, 1f, 0f));
+        (z.getRenderStates()).setColor(new Vector3f(0f, 0f, 1f));
 	}
 
 	@Override
@@ -120,6 +141,7 @@ public class MyGame extends VariableFrameRateGame
         rightCamera.setU(new Vector3f(1, 0, 0));
         rightCamera.setV(new Vector3f(0, 0, -1));
         rightCamera.setN(new Vector3f(0, -1, 0));
+		rightCamera.setLocation(new Vector3f(overheadView.x, overheadView.y, overheadView.z));
     }
 
 	@Override
@@ -133,30 +155,40 @@ public class MyGame extends VariableFrameRateGame
 		orbitCamera = new CameraOrbit3D(leftCamera, avatar);
 		
 		// ----------------- INPUTS SECTION -----------------------------
+		FwdAction fwdAction = new FwdAction(this);
+        TurnAction turnAction = new TurnAction(this);
 		OrbitAzimuthAction azmAction = new OrbitAzimuthAction(this, orbitCamera);
         OrbitElevationAction altAction = new OrbitElevationAction(this, orbitCamera);
         OrbitRadiusAction zoomAction = new OrbitRadiusAction(this, orbitCamera);
 		
+		// ----------------- Forward/Backward SECTION -----------------------------
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.W, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.S, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		// ----------------- Turn SECTION -----------------------------
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.A, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.UP, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.DOWN, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		// ----------------- CameraOrbit3D SECTION -----------------------------
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RX, azmAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RY, altAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RZ, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.Z, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 
 	}
 
 	@Override
 	public void update()
-	{	// rotate dolphin if not paused
+	{	
+		// control xyz axes visibility
+        if (isxyzAxesVisible); {
+            xyzAxesVisible();
+        }
+		
+		// game time
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
 		float dt = (float)((currFrameTime - lastFrameTime) / 1000.0);
-		
-		im.update(dt);
-		
-		// elapsTime += dt;
-		if (!paused) elapsTime += (currFrameTime - lastFrameTime) / 1000.0;
-		avatar.setLocalRotation((new Matrix4f()).rotation((float)elapsTime, 0, 1, 0));
-		
+		elapsTime += dt;
 
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
@@ -169,8 +201,11 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
 		
+		// input update
+		im.update(dt);
+		
+		// camera update
 		orbitCamera.updateCameraPosition();
-
 	}
 
 	@Override
@@ -197,7 +232,31 @@ public class MyGame extends VariableFrameRateGame
 			case KeyEvent.VK_9: 
 			    (engine.getSceneGraph()).setSkyBoxEnabled(false); 
 				break; 
+			// show axes
+			case KeyEvent.VK_V:
+				System.out.println("pressed v");
+				isxyzAxesVisible = !isxyzAxesVisible;
+				System.out.println("isxyzAxesVisible is " + isxyzAxesVisible);
+				break;
 		}
 		super.keyPressed(e);
 	}
+	
+	private void xyzAxesVisible() {
+        if (isxyzAxesVisible) {
+            x.getRenderStates().enableRendering();
+            y.getRenderStates().enableRendering();
+            z.getRenderStates().enableRendering();
+
+        } else {
+            x.getRenderStates().disableRendering();
+            y.getRenderStates().disableRendering();
+            z.getRenderStates().disableRendering();
+        }
+    }
+	
+	
+	public GameObject getAvatar() {
+        return avatar;
+    }
 }
