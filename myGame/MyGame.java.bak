@@ -47,7 +47,8 @@ public class MyGame extends VariableFrameRateGame
 	
 	@Override 
 	public void loadSkyBoxes() 
-	{
+	{ fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds"); 
+	  lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands"); 
 	  mars = (engine.getSceneGraph()).loadCubeMap("mars"); 
 	  (engine.getSceneGraph()).setActiveSkyBoxTexture(mars); 
 	  (engine.getSceneGraph()).setSkyBoxEnabled(true); 
