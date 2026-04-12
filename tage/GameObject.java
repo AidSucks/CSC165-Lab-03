@@ -470,8 +470,8 @@ public class GameObject
 
         oldRotation = new Matrix4f(this.getWorldRotation());
         oldRight = new Vector4f(1f, 0f, 0f, 1f).mul(oldRotation);
-        // rotAroundAvatarRight = new Matrix4f().rotation(delta, new Vector3f(oldRight.x(), oldRight.y(), oldRight.z()));
-		rotAroundAvatarRight = new Matrix4f().rotateY(delta);
+        rotAroundAvatarRight = new Matrix4f().rotation(delta, new Vector3f(oldRight.x(), oldRight.y(), oldRight.z()));
+		// rotAroundAvatarRight = new Matrix4f().rotateX(delta);
         // newRotation = oldRotation;
         // newRotation.mul(rotAroundAvatarRight);
         newRotation = rotAroundAvatarRight.mul(oldRotation);

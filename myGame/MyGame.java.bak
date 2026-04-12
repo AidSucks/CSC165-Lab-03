@@ -28,18 +28,14 @@ public class MyGame extends VariableFrameRateGame
 	
 	private int counter=0;
 	private double lastFrameTime, currFrameTime, elapsTime;
-	private int fluffyClouds, lakeIslands, mars; // skyboxes 
+	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
 	
 	// object
-	private GameObject avatar,    x,
-    y,
-    z;
+	private GameObject avatar, x, y, z, terr;
 	// shape
-	private ObjShape dolS,    linxS,
-    linyS,
-    linzS;
+	private ObjShape dolS, linxS, linyS, linzS, terrS;
 	// texture
-	private TextureImage doltx;
+	private TextureImage doltx, hills, grass;
 	// light
 	private Light light1;
 	
@@ -68,11 +64,14 @@ public class MyGame extends VariableFrameRateGame
 		linxS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(3f, 0f, 0f));
         linyS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 3f, 0f));
         linzS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, -3f));
+		terrS = new TerrainPlane(1000);  // pixels per axis = 1000x1000
 	}
 
 	@Override
 	public void loadTextures()
 	{	doltx = new TextureImage("Dolphin_HighPolyUV.jpg");
+		hills = new TextureImage("hills.jpg"); 
+		grass = new TextureImage("grass.jpg"); 
 	}
 	
 	@Override 
@@ -81,6 +80,7 @@ public class MyGame extends VariableFrameRateGame
 		fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds"); 
 		lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands"); 
 		mars = (engine.getSceneGraph()).loadCubeMap("mars"); 
+		mars1 = (engine.getSceneGraph()).loadCubeMap("mars1"); 
 		(engine.getSceneGraph()).setActiveSkyBoxTexture(mars); 
 		(engine.getSceneGraph()).setSkyBoxEnabled(true); 
 	} 
@@ -88,14 +88,8 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale;
-
-		// build avatar
-		avatar = new GameObject(GameObject.root(), dolS, doltx);
-		initialTranslation = (new Matrix4f()).translation(0,0,0);
-		initialScale = (new Matrix4f()).scaling(3.0f);
-		avatar.setLocalTranslation(initialTranslation);
-		avatar.setLocalScale(initialScale);
-		
+	
+	
 		// X,Y,-Z axes
         x = new GameObject(GameObject.root(), linxS);
         y = new GameObject(GameObject.root(), linyS);
@@ -106,6 +100,22 @@ public class MyGame extends VariableFrameRateGame
         (x.getRenderStates()).setColor(new Vector3f(1f, 0f, 0f));
         (y.getRenderStates()).setColor(new Vector3f(0f, 1f, 0f));
         (z.getRenderStates()).setColor(new Vector3f(0f, 0f, 1f));
+
+		// build avatar
+		avatar = new GameObject(GameObject.root(), dolS, doltx);
+		initialTranslation = (new Matrix4f()).translation(1.5f, 1f, -2.5f);
+		avatar.setLocalTranslation(initialTranslation);
+		
+		// build terrain object 
+		terr = new GameObject(GameObject.root(), terrS, grass); 
+		initialTranslation = (new Matrix4f()).translation(0f,0f,0f); 
+		terr.setLocalTranslation(initialTranslation); 
+		initialScale = (new Matrix4f()).scaling(200.0f, 8.0f, 200.0f); 
+		terr.setLocalScale(initialScale); 
+		terr.setHeightMap(hills); 
+		// set tiling for terrain texture 
+		terr.getRenderStates().setTiling(1); 
+		terr.getRenderStates().setTileFactor(10); 
 	}
 
 	@Override
@@ -201,6 +211,11 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
 		
+		// update altitude of avatar based on height map 
+		Vector3f loc = avatar.getWorldLocation(); 
+		float height = terr.getHeight(loc.x(), loc.z()); 
+		avatar.setLocalLocation(new Vector3f(loc.x(), height, loc.z())); 
+		
 		// input update
 		im.update(dt);
 		
@@ -224,11 +239,13 @@ public class MyGame extends VariableFrameRateGame
 				avatar.getRenderStates().setWireframe(false);
 				break;
 			case KeyEvent.VK_4:
-				(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,0));
-				break;
+			    (engine.getSceneGraph()).setActiveSkyBoxTexture(mars); 
+				(engine.getSceneGraph()).setSkyBoxEnabled(true); 
+				break; 
 			case KeyEvent.VK_5:
-				(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
-				break;
+			    (engine.getSceneGraph()).setActiveSkyBoxTexture(mars1); 
+				(engine.getSceneGraph()).setSkyBoxEnabled(true); 
+				break; 
 			case KeyEvent.VK_9: 
 			    (engine.getSceneGraph()).setSkyBoxEnabled(false); 
 				break; 
