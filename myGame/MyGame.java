@@ -31,11 +31,11 @@ public class MyGame extends VariableFrameRateGame
 	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
 	
 	// object
-	private GameObject avatar, x, y, z, terr;
+	private GameObject avatar, enemy, x, y, z, terr;
 	// shape
-	private ObjShape dolS, linxS, linyS, linzS, terrS;
+	private ObjShape dolS, enemyS, linxS, linyS, linzS, terrS;
 	// texture
-	private TextureImage doltx, hills, floor;
+	private TextureImage doltx, enemyTex, hills, floor;
 	// light
 	private Light light1;
 	
@@ -59,8 +59,9 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	@Override
-	public void loadShapes()
-	{	dolS = new ImportedModel("dolphinHighPoly.obj");
+	public void loadShapes(){
+		dolS = new ImportedModel("dolphinHighPoly.obj");
+		enemyS = new ImportedModel("enemy.obj");
 		linxS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(3f, 0f, 0f));
         linyS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 3f, 0f));
         linzS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, -3f));
@@ -70,6 +71,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadTextures()
 	{	doltx = new TextureImage("Dolphin_HighPolyUV.jpg");
+		enemyTex = new TextureImage("enemyUV.jpg");
 		hills = new TextureImage("hills.jpg"); 
 		floor = new TextureImage("floor.jpg"); 
 	}
@@ -87,9 +89,8 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void buildObjects()
-	{	Matrix4f initialTranslation, initialScale;
-	
-	
+	{	Matrix4f initialTranslation, initialScale, initialRotation;
+
 		// X,Y,-Z axes
         x = new GameObject(GameObject.root(), linxS);
         y = new GameObject(GameObject.root(), linyS);
@@ -105,6 +106,16 @@ public class MyGame extends VariableFrameRateGame
 		avatar = new GameObject(GameObject.root(), dolS, doltx);
 		initialTranslation = (new Matrix4f()).translation(1.5f, 1f, -2.5f);
 		avatar.setLocalTranslation(initialTranslation);
+		
+		// build enemy
+		enemy = new GameObject(GameObject.root(), enemyS, enemyTex);
+		initialTranslation = (new Matrix4f()).translation(0f, 1f, 0.5f);
+		enemy.setLocalTranslation(initialTranslation);
+		initialScale = (new Matrix4f()).scaling(1f);
+        enemy.setLocalScale(initialScale);
+		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f));
+        enemy.setLocalRotation(initialRotation);
+		
 		
 		// build terrain object 
 		terr = new GameObject(GameObject.root(), terrS, floor); 
@@ -212,9 +223,15 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
 		
 		// update altitude of avatar based on height map 
-		Vector3f loc = avatar.getWorldLocation(); 
-		float height = terr.getHeight(loc.x(), loc.z()); 
-		avatar.setLocalLocation(new Vector3f(loc.x(), height, loc.z())); 
+		Vector3f avatorLoc = avatar.getWorldLocation(); 
+		float avatorHeight = terr.getHeight(avatorLoc.x(), avatorLoc.z()); 
+		avatar.setLocalLocation(new Vector3f(avatorLoc.x(), avatorHeight, avatorLoc.z())); 
+		
+		Vector3f enemyLoc = enemy.getWorldLocation(); 
+		float enemyHeight = terr.getHeight(enemyLoc.x(), enemyLoc.z()); 
+		enemy.setLocalLocation(new Vector3f(enemyLoc.x(), enemyHeight, enemyLoc.z())); 
+		
+		
 		
 		// input update
 		im.update(dt);
