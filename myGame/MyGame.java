@@ -3,20 +3,11 @@ package myGame;
 import tage. * ;
 import tage.shapes. * ;
 
-import java.util.ArrayList;
 import java.lang.Math;
-import java.awt. * ;
 import java.awt.event. * ;
-import java.io. * ;
-import javax.swing. * ;
 import org.joml. * ;
 
 import tage.input. * ;
-import tage.input.action. * ;
-import net.java.games.input. * ;
-import net.java.games.input.Component.Identifier. * ;
-import java.util.ArrayList;
-import tage.nodeControllers. * ;
 
 public class MyGame extends VariableFrameRateGame
 {
