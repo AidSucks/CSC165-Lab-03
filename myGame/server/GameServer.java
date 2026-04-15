@@ -64,7 +64,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 	}
 
 	// IN: leave;<uuid>
-	// OUT: leave;<status>
+	// OUT: leave;<uuid>
 	private void runLeave(String[] args)
 	{
 		try {
@@ -73,7 +73,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 
 			removeClient(clientID);
 
-			sendPacket(new String("leave;true"), clientID);
+			forwardPacketToAll(String.join(";", "leave", clientID.toString()), clientID);
 
 		} catch(IOException ex) {
 			System.err.println(ex.getMessage());
@@ -82,6 +82,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 
 	// IN: spawn;<uuid>;<x>;<y>;<z>
 	// OUT: create;<uuid>;<x>;<y>;<z>
+	// OUT: detail-request;<uuid-to>
 	private void runSpawn(String[] args)
 	{
 		try {
