@@ -1,0 +1,1 @@
+java myGame/server/ServerInstance 9999
