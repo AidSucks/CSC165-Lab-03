@@ -14,13 +14,15 @@ public class GameClient extends GameConnectionClient {
 
 	private UUID clientUUID;
 	private MyGame game;
+	private GhostManager ghostManager;
 
-	public GameClient(InetAddress remoteAddr, int remotePort, InetAddress localAddr, int localPort, MyGame game) throws IOException 
+	public GameClient(InetAddress remoteAddr, int remotePort, MyGame game) throws IOException 
 	{
-		super(remoteAddr, remotePort, localAddr, localPort, ProtocolType.UDP);
+		super(remoteAddr, remotePort, ProtocolType.UDP);
 
 		this.clientUUID = UUID.randomUUID();
 		this.game = game;
+		this.ghostManager = new GhostManager(this.game);
 	}
 
 	@Override
@@ -75,6 +77,24 @@ public class GameClient extends GameConnectionClient {
 			System.err.println(ex.getMessage());
 		}
 	}
+
+	public void sendMove(Vector3f position)
+	{
+		try {
+
+			sendPacket(
+				String.join(";", 
+				"move", 
+				this.clientUUID.toString(),
+				String.valueOf(position.x),
+				String.valueOf(position.y),
+				String.valueOf(position.z)
+			));
+
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
 	
 	private void runJoin(String[] args) 
 	{
@@ -100,7 +120,7 @@ public class GameClient extends GameConnectionClient {
 	{
 		UUID ghostID = UUID.fromString(args[0]);
 
-		// TODO Remove ghost from list
+		ghostManager.removeGhost(ghostID);
 	}
 
 	// Runs upon another player joining
@@ -114,7 +134,7 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		// TODO Create ghost avatar
+		ghostManager.createGhost(newGhostID, spawnPosition);
 	}
 
 	private void runDetailRequest(String[] args)
@@ -141,7 +161,6 @@ public class GameClient extends GameConnectionClient {
 	// Runs upon this player joining and receiving other players' locations
 	private void runDetailFor(String[] args)
 	{
-
 		UUID newGhostID = UUID.fromString(args[0]);
 
 		Vector3f spawnPosition = new Vector3f(
@@ -150,7 +169,7 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		// TODO create ghost 
+		ghostManager.createGhost(newGhostID, spawnPosition);
 	}
 
 	private void runMove(String[] args)
@@ -163,6 +182,6 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		// TODO update ghost
+		ghostManager.updateGhost(ghostID, nextPosition);
 	}
 }

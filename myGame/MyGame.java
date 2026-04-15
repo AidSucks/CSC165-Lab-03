@@ -4,15 +4,21 @@ import tage. * ;
 import tage.shapes. * ;
 
 import java.lang.Math;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.awt.event. * ;
+import java.io.IOException;
+
 import org.joml. * ;
 
+import myGame.client.GameClient;
 import tage.input. * ;
 
 public class MyGame extends VariableFrameRateGame
 {
 	private static Engine engine;
 	private InputManager im;
+	private GameClient gameClient;
 	
 	private boolean isxyzAxesVisible = true;
 	private boolean paused=false;
@@ -39,7 +45,9 @@ public class MyGame extends VariableFrameRateGame
     private Viewport rightVp;
 	private Vector3f overheadView = new Vector3f(0, 18, 0);
 
-	public MyGame() { super(); }
+	public MyGame() { 
+		super();
+	}
 
 	public static void main(String[] args)
 	{	MyGame game = new MyGame();
@@ -47,6 +55,25 @@ public class MyGame extends VariableFrameRateGame
 		engine.initializeSystem();
 		game.buildGame();
 		game.startGame();
+	}
+
+	private void setupNetworking()
+	{
+		try {
+
+			// TODO change server address & port
+			this.gameClient = new GameClient(InetAddress.getByName("localhost"), 9999, this);
+
+		}catch(UnknownHostException ex) {
+			System.err.println(ex.getMessage());
+		}
+		catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+
+		if(this.gameClient == null) return;
+
+		this.gameClient.joinServer();
 	}
 
 	@Override
@@ -161,6 +188,9 @@ public class MyGame extends VariableFrameRateGame
 	{	lastFrameTime = System.currentTimeMillis();
 		currFrameTime = System.currentTimeMillis();
 		elapsTime = 0.0;
+
+		// Process packets
+
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
 		
 		im = engine.getInputManager();
@@ -186,11 +216,16 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RY, altAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.Z, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 
+		this.setupNetworking();
 	}
 
 	@Override
 	public void update()
 	{	
+		if(this.gameClient != null) {
+			this.gameClient.processPackets();
+		}
+		
 		// control xyz axes visibility
         if (isxyzAxesVisible); {
             xyzAxesVisible();
@@ -229,6 +264,14 @@ public class MyGame extends VariableFrameRateGame
 		
 		// camera update
 		orbitCamera.updateCameraPosition();
+	}
+
+	@Override
+	public void shutdown()
+	{
+		super.shutdown();
+
+		this.gameClient.leaveServer();
 	}
 
 	@Override
@@ -284,4 +327,12 @@ public class MyGame extends VariableFrameRateGame
 	public GameObject getAvatar() {
         return avatar;
     }
+
+	public static Engine getEngine() {
+		return engine;
+	}
+
+	public GameClient getGameClient() {
+		return this.gameClient;
+	}
 }

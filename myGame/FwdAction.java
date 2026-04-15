@@ -1,7 +1,6 @@
 package myGame;
 
 import tage. * ;
-import tage.shapes. * ;
 
 import tage.input.action.AbstractInputAction;
 import net.java.games.input.Event;
@@ -67,5 +66,6 @@ public class FwdAction extends AbstractInputAction {
 
         av.setLocalLocation(newPosition);
 
+		this.game.getGameClient().sendMove(av.getWorldLocation());
     }
 }
