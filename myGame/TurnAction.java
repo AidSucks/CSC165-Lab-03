@@ -31,23 +31,23 @@ public class TurnAction extends AbstractInputAction {
 
         // key yaw action
         if (e.getComponent().getName().equals("A")) {
-            System.out.println("OBJ pressed A");
+            // System.out.println("OBJ pressed A");
             av.yaw(turnSpeed * time);
         }
 
         if (e.getComponent().getName().equals("D")) {
-            System.out.println("OBJ pressed D");
+            // System.out.println("OBJ pressed D");
             av.yaw(-turnSpeed * time);
         }
 
         // key pitch action
         if (e.getComponent().getName().equals("Up")) {
-            System.out.println("OBJ pressed Up");
+            // System.out.println("OBJ pressed Up");
             av.pitch(-turnSpeed * time);
         }
 
         if (e.getComponent().getName().equals("Down")) {
-            System.out.println("OBJ pressed Down");
+            // System.out.println("OBJ pressed Down");
             av.pitch(turnSpeed * time);
         }
 

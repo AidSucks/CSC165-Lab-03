@@ -2,6 +2,7 @@ package myGame;
 
 import tage. * ;
 import tage.shapes. * ;
+import java.util.ArrayList;
 
 import java.lang.Math;
 import java.net.InetAddress;
@@ -44,6 +45,11 @@ public class MyGame extends VariableFrameRateGame
 	private Viewport leftVp;
     private Viewport rightVp;
 	private Vector3f overheadView = new Vector3f(0, 18, 0);
+	
+	private ArrayList<GameObject> enemies = new ArrayList<>();
+	private int maxEnemies = 100;
+	private float spawnTimer = 0.0f;
+	private float spawnWait = 2.0f; // spawn every 2 seconds
 
 	public MyGame() { 
 		super();
@@ -218,6 +224,27 @@ public class MyGame extends VariableFrameRateGame
 
 		this.setupNetworking();
 	}
+	
+	private void spawnEnemy() {
+		GameObject e = new GameObject(GameObject.root(), enemyS, enemyTex);
+
+		// get player position
+		Vector3f playerPos = avatar.getWorldLocation();
+
+		// random angle (circle around player)
+		float angle = (float)(Math.random() * Math.PI * 2);
+
+		// random distance from player
+		float distance = 5.0f + (float)(Math.random() * 10.0f);
+
+		float x = playerPos.x() + (float)Math.cos(angle) * distance;
+		float z = playerPos.z() + (float)Math.sin(angle) * distance;
+		float y = terr.getHeight(x, z);
+
+		e.setLocalTranslation(new Matrix4f().translation(x, y, z));
+
+		enemies.add(e);
+	}
 
 	@Override
 	public void update()
@@ -236,6 +263,16 @@ public class MyGame extends VariableFrameRateGame
 		currFrameTime = System.currentTimeMillis();
 		float dt = (float)((currFrameTime - lastFrameTime) / 1000.0);
 		elapsTime += dt;
+		
+		// spawn enemies
+		spawnTimer += dt;
+		if (spawnTimer >= spawnWait && enemies.size() < maxEnemies) {
+			System.out.println("spawn enemies");
+			spawnEnemy();
+			spawnTimer = 0.0f;
+			System.out.println("enemiesSpawn:" + enemies.size());
+
+		}
 
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
@@ -264,6 +301,60 @@ public class MyGame extends VariableFrameRateGame
 		
 		// camera update
 		orbitCamera.updateCameraPosition();
+		
+		// --------------- enemy walk to player https://www.youtube.com/watch?v=E_ZROz5nejw&list=LL&index=1&t=259s
+		for (GameObject e : enemies) {
+				Vector3f enemiesPos = e.getWorldLocation();
+				Vector3f playerPos = avatar.getWorldLocation();
+
+				// distance^2 = (x2 - x1)^2 + (y2 - y1)^2
+				float dxPlayer = playerPos.x() - enemiesPos.x();
+				float dzPlayer = playerPos.z() - enemiesPos.z();
+				// distance^2 b/w player and enemy
+				float distToPlayerSq = dxPlayer * dxPlayer + dzPlayer * dzPlayer;
+				
+				float enemyAttackRange = 0.3f;
+
+				// if player and enemy distance greater then enemy attack distance,
+				// enemy walk to player
+				if (distToPlayerSq > enemyAttackRange * enemyAttackRange) {
+					// direction to the player
+					Vector3f dir = new Vector3f(dxPlayer, 0, dzPlayer);
+					// dir positive
+					dir.normalize();
+
+					// --------------- aviod enemy overlap ---------------
+					Vector3f push = new Vector3f(0, 0, 0);
+					float minDist = 0.3f;
+
+					for (GameObject other : enemies) {
+						
+						Vector3f otherEnemiesPos = other.getWorldLocation();
+
+						float dxEnemies = enemiesPos.x() - otherEnemiesPos.x();
+						float dzEnemies = enemiesPos.z() - otherEnemiesPos.z();
+						float distToEnemiesSq = dxEnemies * dxEnemies + dzEnemies * dzEnemies;
+
+						// if enemies distance less then min enemies distance (enemies too close together),
+						// push enemies back
+						if (distToEnemiesSq < minDist * minDist) {
+							float dist = (float)Math.sqrt(distToEnemiesSq);
+							push.x += dx / dist;
+							push.z += dz / dist;
+						}
+					}
+
+					push.normalize();
+
+					float speed = 2.0f;
+					float newX = pos.x() + (dir.x() + push.x) * speed * dt;
+					float newZ = pos.z() + (dir.z() + push.z) * speed * dt;
+					float newY = terr.getHeight(newX, newZ);
+
+					e.setLocalLocation(new Vector3f(newX, newY, newZ));
+				}
+		}
+	
 	}
 
 	@Override
@@ -299,6 +390,12 @@ public class MyGame extends VariableFrameRateGame
 				break; 
 			case KeyEvent.VK_9: 
 			    (engine.getSceneGraph()).setSkyBoxEnabled(false); 
+				break; 
+			case KeyEvent.VK_O: 
+			    terr.getRenderStates().enableRendering();
+				break; 
+			case KeyEvent.VK_P: 
+			    terr.getRenderStates().disableRendering();
 				break; 
 			// show axes
 			case KeyEvent.VK_V:

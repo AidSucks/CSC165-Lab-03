@@ -54,13 +54,13 @@ public class FwdAction extends AbstractInputAction {
 
         // key forward
         if (e.getComponent().getName().equals("W")) {
-            System.out.println("OBJ pressed W");
+            // System.out.println("OBJ pressed W");
             newPosition = new Vector3f(oldPosition).add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
         }
 
         // key backward
         if (e.getComponent().getName().equals("S")) {
-            System.out.println("Obj pressed S");
+            // System.out.println("Obj pressed S");
             newPosition = new Vector3f(oldPosition).sub(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
         }
 
