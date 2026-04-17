@@ -302,7 +302,7 @@ public class MyGame extends VariableFrameRateGame
 		// camera update
 		orbitCamera.updateCameraPosition();
 		
-		// --------------- enemy walk to player https://www.youtube.com/watch?v=E_ZROz5nejw&list=LL&index=1&t=259s
+		// --------------- enemy walk to player 
 		for (GameObject e : enemies) {
 				Vector3f enemiesPos = e.getWorldLocation();
 				Vector3f playerPos = avatar.getWorldLocation();
@@ -334,21 +334,26 @@ public class MyGame extends VariableFrameRateGame
 						float dxEnemies = enemiesPos.x() - otherEnemiesPos.x();
 						float dzEnemies = enemiesPos.z() - otherEnemiesPos.z();
 						float distToEnemiesSq = dxEnemies * dxEnemies + dzEnemies * dzEnemies;
+						// System.out.println("distToEnemiesSq:" + distToEnemiesSq);
 
 						// if enemies distance less then min enemies distance (enemies too close together),
 						// push enemies back
-						if (distToEnemiesSq < minDist * minDist) {
+						if (distToEnemiesSq < minDist * minDist && distToEnemiesSq > 0.0001f) {
 							float dist = (float)Math.sqrt(distToEnemiesSq);
-							push.x += dx / dist;
-							push.z += dz / dist;
+							push.x += dxEnemies / dist;
+							push.z += dzEnemies / dist;
 						}
 					}
+					
 
-					push.normalize();
-
+					// System.out.println("push.lengthSquared():" + push.lengthSquared());
+					if (push.lengthSquared() > 0.0001f) {
+						
+						push.normalize();
+					}
 					float speed = 2.0f;
-					float newX = pos.x() + (dir.x() + push.x) * speed * dt;
-					float newZ = pos.z() + (dir.z() + push.z) * speed * dt;
+					float newX = enemiesPos.x() + (dir.x() + push.x) * speed * dt;
+					float newZ = enemiesPos.z() + (dir.z() + push.z) * speed * dt;
 					float newY = terr.getHeight(newX, newZ);
 
 					e.setLocalLocation(new Vector3f(newX, newY, newZ));
