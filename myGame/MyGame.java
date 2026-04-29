@@ -52,7 +52,7 @@ public class MyGame extends VariableFrameRateGame
 	private int maxEnemies = 100;
 	private float spawnTimer = 0.0f;
 	private float spawnWait = 2.0f; // spawn every 2 seconds
-	private boolean isEnemyHost = true; // testing enemies server game A true, game B false
+	private boolean isEnemyHost = false; // testing enemies server game A true, game B false
 	private class LocalEnemy {
 		UUID id;
 		GameObject obj;
@@ -471,5 +471,9 @@ public class MyGame extends VariableFrameRateGame
 
 	public TextureImage getEnemyTexture() {
 		return enemyTex;
+	}
+	
+	public GameObject getTerrain() {
+		return terr;
 	}
 }

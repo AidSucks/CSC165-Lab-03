@@ -22,12 +22,69 @@ public class GameServer extends GameConnectionServer<UUID> {
 			this.z = z;
 		}
 	}
-
+	
 	private ArrayList<ServerEnemy> activeEnemies = new ArrayList<>();
+	
+	NPCcontroller npcCtrl; 
 
 	public GameServer(int localPort) throws IOException
 	{
 		super(localPort, ProtocolType.UDP);
+		
+		npcCtrl = new NPCcontroller(this);
+        npcCtrl.start();
+	}
+	
+	// public void sendCheckForAvatarNear() {
+		// try {
+			
+			// String message = new String("isnr"); 
+			// message += "," + (npcCtrl.getNPC()).getX(); 
+			// message += "," + (npcCtrl.getNPC()).getY(); 
+			// message += "," + (npcCtrl.getNPC()).getZ(); 
+			// message += "," + (npcCtrl.getCriteria()); 
+			
+			// sendPacketToAll(message); 
+		  // }  catch (IOException e){
+			  // System.out.println("couldnt send msg"); e.printStackTrace(); } 
+	// }
+	
+	public void sendNPCinfo() {
+		try {
+			NPC npc = npcCtrl.getNPC();
+
+			String message = String.join(";",
+				"mnpc",
+				npc.getID().toString(),
+				String.valueOf(npc.getX()),
+				String.valueOf(npc.getY()),
+				String.valueOf(npc.getZ()),
+				String.valueOf(npc.getSize())
+			);
+
+			sendPacketToAll(message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void sendNPCstart(UUID clientID) {
+		try {
+			NPC npc = npcCtrl.getNPC();
+
+			String message = String.join(";",
+				"createNPC",
+				npc.getID().toString(),
+				String.valueOf(npc.getX()),
+				String.valueOf(npc.getY()),
+				String.valueOf(npc.getZ()),
+				String.valueOf(npc.getSize())
+			);
+
+			sendPacket(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -65,6 +122,10 @@ public class GameServer extends GameConnectionServer<UUID> {
 		else if(tokens[0].equalsIgnoreCase("enemy-delete")) {
 			runEnemyDelete(args);
 		}
+		
+		else if(tokens[0].equalsIgnoreCase("isnear")) {
+			runIsNear(args);
+		}
 	}
 	
 	// IN: join;<uuid>
@@ -82,6 +143,8 @@ public class GameServer extends GameConnectionServer<UUID> {
 			addClient(clientInfo, clientID);
 
 			sendPacket(new String("join;true"), clientID);
+			
+			sendNPCstart(clientID);
 			sendExistingEnemiesToClient(clientID);
 
 		} catch (IOException ex) {
@@ -227,17 +290,21 @@ public class GameServer extends GameConnectionServer<UUID> {
 	}
 	
 	private void sendExistingEnemiesToClient(UUID clientID) {
-    try {
-        for (ServerEnemy e : activeEnemies) {
-            String msg = String.join(";",
-                "enemy-create",
-                e.id.toString(),
-                e.x, e.y, e.z
-            );
-            sendPacket(msg, clientID);
-        }
-    } catch (IOException ex) {
-        System.err.println(ex.getMessage());
-    }
-}
+		try {
+			for (ServerEnemy e : activeEnemies) {
+				String msg = String.join(";",
+					"enemy-create",
+					e.id.toString(),
+					e.x, e.y, e.z
+				);
+				sendPacket(msg, clientID);
+			}
+		} catch (IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+	
+	private void runIsNear(String[] args) {
+		npcCtrl.setAvatarNear(true);
+	}
 }

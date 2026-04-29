@@ -18,4 +18,8 @@ public class GhostEnemy extends GameObject {
     public UUID getID() {
         return id;
     }
+	
+	public void setSize(float size) {
+		setLocalScale(new Matrix4f().scaling(size));
+	}
 }

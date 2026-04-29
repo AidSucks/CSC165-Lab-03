@@ -5,7 +5,7 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.UUID;
 
-import org.joml.Vector3f;
+import org.joml.*;
 
 import myGame.MyGame;
 import tage.networking.client.GameConnectionClient;
@@ -65,6 +65,13 @@ public class GameClient extends GameConnectionClient {
 		}
 		else if(tokens[0].equalsIgnoreCase("enemy-delete")) {
 			runEnemyDelete(args);
+		}
+		// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
+		else if(tokens[0].equalsIgnoreCase("createNPC")) {
+			runCreateNPC(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("mnpc")) {
+			runMoveNPC(args);
 		}
 	}
 
@@ -251,7 +258,7 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		enemyManager.createEnemy(enemyID, spawnPosition);
+		enemyManager.createEnemy(enemyID, spawnPosition, 1.0f);
 	}
 
 	private void runEnemyMove(String[] args)
@@ -264,7 +271,7 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		enemyManager.updateEnemy(enemyID, nextPosition);
+		enemyManager.updateEnemy(enemyID, nextPosition, 1.0f);
 	}
 
 	private void runEnemyDelete(String[] args)
@@ -275,6 +282,60 @@ public class GameClient extends GameConnectionClient {
 	
 	public GhostManager getGhostManager() {
 		return ghostManager;
+	}
+	
+	// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
+	private void runCreateNPC(String[] args) {
+		UUID npcID = UUID.fromString(args[0]);
+		
+		float x = Float.parseFloat(args[1]);
+		float z = Float.parseFloat(args[3]);
+		float size = Float.parseFloat(args[4]);
+
+		float y = game.getTerrain().getHeight(x, z);
+
+
+		Vector3f npcPos = new Vector3f(x, y, z);
+
+		enemyManager.createEnemy(npcID, npcPos, size);
+		checkAvatarNearNPC(npcPos);
+	}
+	
+	private void runMoveNPC(String[] args) {
+		UUID npcID = UUID.fromString(args[0]);
+		
+		float x = Float.parseFloat(args[1]);
+		float z = Float.parseFloat(args[3]);
+		float size = Float.parseFloat(args[4]);
+
+		float y = game.getTerrain().getHeight(x, z);
+		
+		Vector3f npcPos = new Vector3f(x, y, z);
+
+
+		enemyManager.updateEnemy(npcID, npcPos, size);
+		checkAvatarNearNPC(npcPos);
+
+	}
+	
+	private void checkAvatarNearNPC(Vector3f npcPos) {
+		Vector3f avatarPos = game.getAvatar().getWorldLocation();
+
+		float distance = avatarPos.distance(npcPos);
+
+		System.out.println("Distance to NPC = " + distance);
+
+		if (distance < 2.0f) {
+			try {
+				sendPacket(String.join(
+					";",
+					"isnear",
+					clientUUID.toString()
+				));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 }
