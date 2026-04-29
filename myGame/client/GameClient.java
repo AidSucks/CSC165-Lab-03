@@ -15,6 +15,7 @@ public class GameClient extends GameConnectionClient {
 	private UUID clientUUID;
 	private MyGame game;
 	private GhostManager ghostManager;
+	private EnemyManager enemyManager;
 
 	public GameClient(InetAddress remoteAddr, int remotePort, MyGame game) throws IOException 
 	{
@@ -23,6 +24,7 @@ public class GameClient extends GameConnectionClient {
 		this.clientUUID = UUID.randomUUID();
 		this.game = game;
 		this.ghostManager = new GhostManager(this.game);
+		this.enemyManager = new EnemyManager(this.game);
 	}
 
 	@Override
@@ -53,6 +55,16 @@ public class GameClient extends GameConnectionClient {
 		}
 		else if(tokens[0].equalsIgnoreCase("move")) {
 			runMove(args);
+		}
+		// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
+		else if(tokens[0].equalsIgnoreCase("enemy-create")) {
+			runEnemyCreate(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("enemy-move")) {
+			runEnemyMove(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("enemy-delete")) {
+			runEnemyDelete(args);
 		}
 	}
 
@@ -184,4 +196,85 @@ public class GameClient extends GameConnectionClient {
 
 		ghostManager.updateGhost(ghostID, nextPosition);
 	}
+	
+	// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
+	
+	public void sendEnemyCreate(UUID enemyID, Vector3f position)
+	{
+		try {
+			sendPacket(String.join(";",
+				"enemy-create",
+				enemyID.toString(),
+				String.valueOf(position.x),
+				String.valueOf(position.y),
+				String.valueOf(position.z)
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public void sendEnemyMove(UUID enemyID, Vector3f position)
+	{
+		try {
+			sendPacket(String.join(";",
+				"enemy-move",
+				enemyID.toString(),
+				String.valueOf(position.x),
+				String.valueOf(position.y),
+				String.valueOf(position.z)
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public void sendEnemyDelete(UUID enemyID)
+	{
+		try {
+			sendPacket(String.join(";",
+				"enemy-delete",
+				enemyID.toString()
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	private void runEnemyCreate(String[] args)
+	{
+		UUID enemyID = UUID.fromString(args[0]);
+
+		Vector3f spawnPosition = new Vector3f(
+			Float.parseFloat(args[1]),
+			Float.parseFloat(args[2]),
+			Float.parseFloat(args[3])
+		);
+
+		enemyManager.createEnemy(enemyID, spawnPosition);
+	}
+
+	private void runEnemyMove(String[] args)
+	{
+		UUID enemyID = UUID.fromString(args[0]);
+
+		Vector3f nextPosition = new Vector3f(
+			Float.parseFloat(args[1]),
+			Float.parseFloat(args[2]),
+			Float.parseFloat(args[3])
+		);
+
+		enemyManager.updateEnemy(enemyID, nextPosition);
+	}
+
+	private void runEnemyDelete(String[] args)
+	{
+		UUID enemyID = UUID.fromString(args[0]);
+		enemyManager.removeEnemy(enemyID);
+	}
+	
+	public GhostManager getGhostManager() {
+		return ghostManager;
+	}
+
 }

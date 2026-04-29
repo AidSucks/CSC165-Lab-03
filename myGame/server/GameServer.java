@@ -4,11 +4,26 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.ArrayList;
 
 import tage.networking.server.GameConnectionServer;
 import tage.networking.server.IClientInfo;
 
 public class GameServer extends GameConnectionServer<UUID> {
+	
+	private class ServerEnemy {
+		UUID id;
+		String x, y, z;
+
+		ServerEnemy(UUID id, String x, String y, String z) {
+			this.id = id;
+			this.x = x;
+			this.y = y;
+			this.z = z;
+		}
+	}
+
+	private ArrayList<ServerEnemy> activeEnemies = new ArrayList<>();
 
 	public GameServer(int localPort) throws IOException
 	{
@@ -40,6 +55,16 @@ public class GameServer extends GameConnectionServer<UUID> {
 		else if(tokens[0].equalsIgnoreCase("move")) {
 			runMove(args);
 		}
+		// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
+		else if(tokens[0].equalsIgnoreCase("enemy-create")) {
+			runEnemyCreate(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("enemy-move")) {
+			runEnemyMove(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("enemy-delete")) {
+			runEnemyDelete(args);
+		}
 	}
 	
 	// IN: join;<uuid>
@@ -57,6 +82,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 			addClient(clientInfo, clientID);
 
 			sendPacket(new String("join;true"), clientID);
+			sendExistingEnemiesToClient(clientID);
 
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
@@ -133,4 +159,85 @@ public class GameServer extends GameConnectionServer<UUID> {
 			System.err.println(ex.getMessage());
 		}
 	}
+	
+	
+	// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
+	
+	// IN: enemy-create;<enemyId>;<x>;<y>;<z>
+	// OUT: enemy-create;<enemyId>;<x>;<y>;<z>
+	private void runEnemyCreate(String[] args)
+	{
+		try {
+			UUID enemyID = UUID.fromString(args[0]);
+
+			activeEnemies.add(new ServerEnemy(enemyID, args[1], args[2], args[3]));
+
+			String msg = String.join(";", "enemy-create",
+				enemyID.toString(), args[1], args[2], args[3]);
+
+			sendPacketToAll(msg);
+		}
+		catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	// IN: enemy-move;<enemyId>;<x>;<y>;<z>
+	// OUT: enemy-move;<enemyId>;<x>;<y>;<z>
+	private void runEnemyMove(String[] args)
+	{
+		try {
+			UUID enemyID = UUID.fromString(args[0]);
+
+			for (ServerEnemy e : activeEnemies) {
+				if (e.id.compareTo(enemyID) == 0) {
+					e.x = args[1];
+					e.y = args[2];
+					e.z = args[3];
+					break;
+				}
+			}
+
+			String msg = String.join(";", "enemy-move",
+				enemyID.toString(), args[1], args[2], args[3]);
+
+			sendPacketToAll(msg);
+		}
+		catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	// IN: enemy-delete;<enemyId>
+	// OUT: enemy-delete;<enemyId>
+	private void runEnemyDelete(String[] args)
+	{
+		try {
+			 UUID enemyID = UUID.fromString(args[0]);
+
+			
+			activeEnemies.removeIf(e -> e.id.compareTo(enemyID) == 0);
+			
+			String msg = String.join(";", "enemy-delete", args[0]);
+			sendPacketToAll(msg);
+		}
+		catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+	
+	private void sendExistingEnemiesToClient(UUID clientID) {
+    try {
+        for (ServerEnemy e : activeEnemies) {
+            String msg = String.join(";",
+                "enemy-create",
+                e.id.toString(),
+                e.x, e.y, e.z
+            );
+            sendPacket(msg, clientID);
+        }
+    } catch (IOException ex) {
+        System.err.println(ex.getMessage());
+    }
+}
 }
