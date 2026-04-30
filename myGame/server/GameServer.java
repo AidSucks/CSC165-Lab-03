@@ -49,43 +49,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 			  // System.out.println("couldnt send msg"); e.printStackTrace(); } 
 	// }
 	
-	public void sendNPCinfo() {
-		try {
-			NPC npc = npcCtrl.getNPC();
 
-			String message = String.join(";",
-				"mnpc",
-				npc.getID().toString(),
-				String.valueOf(npc.getX()),
-				String.valueOf(npc.getY()),
-				String.valueOf(npc.getZ()),
-				String.valueOf(npc.getSize())
-			);
-
-			sendPacketToAll(message);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void sendNPCstart(UUID clientID) {
-		try {
-			NPC npc = npcCtrl.getNPC();
-
-			String message = String.join(";",
-				"createNPC",
-				npc.getID().toString(),
-				String.valueOf(npc.getX()),
-				String.valueOf(npc.getY()),
-				String.valueOf(npc.getZ()),
-				String.valueOf(npc.getSize())
-			);
-
-			sendPacket(message, clientID);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 
 	@Override
 	public void processPacket(Object object, InetAddress senderIP, int senderPort)
@@ -122,7 +86,10 @@ public class GameServer extends GameConnectionServer<UUID> {
 		else if(tokens[0].equalsIgnoreCase("enemy-delete")) {
 			runEnemyDelete(args);
 		}
-		
+		// ++++++++++++++++++++++++++++++++++ npc ++++++++++++++++++++++++++++++++++
+		else if(tokens[0].equalsIgnoreCase("spawnNPC")) {
+			runSpawnNPC(args);
+		}
 		else if(tokens[0].equalsIgnoreCase("isnear")) {
 			runIsNear(args);
 		}
@@ -144,7 +111,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 
 			sendPacket(new String("join;true"), clientID);
 			
-			sendNPCstart(clientID);
+			// sendNPCstart(clientID);
 			sendExistingEnemiesToClient(clientID);
 
 		} catch (IOException ex) {
@@ -304,7 +271,82 @@ public class GameServer extends GameConnectionServer<UUID> {
 		}
 	}
 	
+	// ++++++++++++++++++++++++++++++++++ npc ++++++++++++++++++++++++++++++++++
+	
+	public void sendNPCinfo() {
+		try {
+			NPC npc = npcCtrl.getNPC();
+
+			String message = String.join(";",
+				"mnpc",
+				npc.getID().toString(),
+				String.valueOf(npc.getX()),
+				String.valueOf(npc.getY()),
+				String.valueOf(npc.getZ()),
+				String.valueOf(npc.getSize())
+			);
+
+			sendPacketToAll(message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void sendNPCstart(UUID clientID) {
+		try {
+			NPC npc = npcCtrl.getNPC();
+
+			String message = String.join(";",
+				"createNPC",
+				npc.getID().toString(),
+				String.valueOf(npc.getX()),
+				String.valueOf(npc.getY()),
+				String.valueOf(npc.getZ()),
+				String.valueOf(npc.getSize())
+			);
+
+			sendPacket(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void sendNPCstartToAll() {
+		try {
+			NPC npc = npcCtrl.getNPC();
+
+			String message = String.join(";",
+				"createNPC",
+				npc.getID().toString(),
+				String.valueOf(npc.getX()),
+				String.valueOf(npc.getY()),
+				String.valueOf(npc.getZ()),
+				String.valueOf(npc.getSize())
+			);
+
+			sendPacketToAll(message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void runSpawnNPC(String[] args) {
+		UUID clientID = UUID.fromString(args[0]);
+
+		double avatarX = Double.parseDouble(args[1]);
+		double avatarY = Double.parseDouble(args[2]);
+		double avatarZ = Double.parseDouble(args[3]);
+
+		npcCtrl.spawnNPCAround(avatarX, avatarY, avatarZ);
+	}
+
 	private void runIsNear(String[] args) {
-		npcCtrl.setAvatarNear(true);
+		float x = Float.parseFloat(args[1]);
+		float y = Float.parseFloat(args[2]);
+		float z = Float.parseFloat(args[3]);
+		
+		// System.out.println("server got avatar pos: " + x + "," + y + "," + z);
+
+		npcCtrl.setAvatarNear(x, y, z);
 	}
 }

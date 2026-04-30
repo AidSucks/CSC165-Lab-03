@@ -285,15 +285,15 @@ public class MyGame extends VariableFrameRateGame
 		float dt = (float)((currFrameTime - lastFrameTime) / 1000.0);
 		elapsTime += dt;
 		
-		// spawn enemies
-		if (isEnemyHost && isGameStart) {
-			spawnTimer += dt;
-			if (spawnTimer >= spawnWait && enemies.size() < maxEnemies) {
-				spawnEnemy();
-				spawnTimer = 0.0f;
-				System.out.println("enemiesSpawn:" + enemies.size());
-			}
-		}
+		// // spawn enemies
+		// if (isEnemyHost && isGameStart) {
+			// spawnTimer += dt;
+			// if (spawnTimer >= spawnWait && enemies.size() < maxEnemies) {
+				// spawnEnemy();
+				// spawnTimer = 0.0f;
+				// System.out.println("enemiesSpawn:" + enemies.size());
+			// }
+		// }
 
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
@@ -402,6 +402,12 @@ public class MyGame extends VariableFrameRateGame
 		{	case KeyEvent.VK_0:
 				System.out.println("pressed 0");
 				isGameStart = true;
+				break;
+			case KeyEvent.VK_T:
+				if (gameClient != null) {
+					Vector3f avatarPos = avatar.getWorldLocation();
+					gameClient.sendSpawnNPCRequest(avatarPos);
+				}
 				break;
 			case KeyEvent.VK_1:
 				paused = !paused;

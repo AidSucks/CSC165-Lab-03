@@ -285,6 +285,22 @@ public class GameClient extends GameConnectionClient {
 	}
 	
 	// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
+	
+	public void sendSpawnNPCRequest(Vector3f avatarPos) {
+		try {
+			sendPacket(String.join(
+				";",
+				"spawnNPC",
+				clientUUID.toString(),
+				String.valueOf(avatarPos.x),
+				String.valueOf(avatarPos.y),
+				String.valueOf(avatarPos.z)
+			));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	private void runCreateNPC(String[] args) {
 		UUID npcID = UUID.fromString(args[0]);
 		
@@ -323,19 +339,25 @@ public class GameClient extends GameConnectionClient {
 
 		float distance = avatarPos.distance(npcPos);
 
-		System.out.println("Distance to NPC = " + distance);
+		// System.out.println("Distance to NPC = " + distance);
 
-		if (distance < 2.0f) {
+		if (distance < 3.0f) {
 			try {
 				sendPacket(String.join(
 					";",
 					"isnear",
-					clientUUID.toString()
+					clientUUID.toString(),
+					String.valueOf(avatarPos.x),
+					String.valueOf(avatarPos.y),
+					String.valueOf(avatarPos.z)
 				));
+				System.out.println("client sent isnear");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
+	
+	
 
 }
