@@ -33,7 +33,7 @@ public class MyGame extends VariableFrameRateGame
 	// object
 	private GameObject avatar, enemy, x, y, z, terr;
 	// shape
-	private ObjShape dolS, enemyS, linxS, linyS, linzS, terrS;
+	private ObjShape dolS, linxS, linyS, linzS, terrS;
 	// texture
 	private TextureImage doltx, enemyTex, hills, floor;
 	// light
@@ -49,6 +49,8 @@ public class MyGame extends VariableFrameRateGame
 	private Vector3f overheadView = new Vector3f(0, 18, 0);
 	
 	// enemies
+	private AnimatedShape enemyS;
+	
 	private int maxEnemies = 100;
 	private float spawnTimer = 0.0f;
 	private float spawnWait = 2.0f; // spawn every 2 seconds
@@ -99,7 +101,9 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes(){
 		dolS = new ImportedModel("dolphinHighPoly.obj");
-		enemyS = new ImportedModel("enemy.obj");
+		// enemyS = new ImportedModel("enemy.obj");
+		enemyS = new AnimatedShape("enemy.rkm", "enemy.rks"); 
+		enemyS.loadAnimation("WAVE", "wave.rka"); 
 		linxS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(3f, 0f, 0f));
         linyS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 3f, 0f));
         linzS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, -3f));
@@ -149,7 +153,7 @@ public class MyGame extends VariableFrameRateGame
 		enemy = new GameObject(GameObject.root(), enemyS, enemyTex);
 		initialTranslation = (new Matrix4f()).translation(0f, 1f, 0.5f);
 		enemy.setLocalTranslation(initialTranslation);
-		initialScale = (new Matrix4f()).scaling(1f);
+		initialScale = (new Matrix4f()).scaling(0.05f);
         enemy.setLocalScale(initialScale);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f));
         enemy.setLocalRotation(initialRotation);
@@ -318,6 +322,9 @@ public class MyGame extends VariableFrameRateGame
 		// input update
 		im.update(dt);
 		
+		// enemy animation update
+		enemyS.updateAnimation(); 
+		
 		// camera update
 		orbitCamera.updateCameraPosition();
 		
@@ -434,6 +441,13 @@ public class MyGame extends VariableFrameRateGame
 				break; 
 			case KeyEvent.VK_P: 
 			    terr.getRenderStates().disableRendering();
+				break; 
+			case KeyEvent.VK_6: 
+				enemyS.stopAnimation(); 
+				enemyS.playAnimation("WAVE", 0.5f, AnimatedShape.EndType.LOOP, 0); 
+				break; 
+			case KeyEvent.VK_7:
+				enemyS.stopAnimation(); 
 				break; 
 			// show axes
 			case KeyEvent.VK_V:
