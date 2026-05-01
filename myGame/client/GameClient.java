@@ -271,7 +271,7 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		enemyManager.updateEnemy(enemyID, nextPosition, 1.0f);
+		enemyManager.updateEnemy(enemyID, nextPosition, 1.0f, 0.0f);
 	}
 
 	private void runEnemyDelete(String[] args)
@@ -306,11 +306,9 @@ public class GameClient extends GameConnectionClient {
 		
 		float x = Float.parseFloat(args[1]);
 		float z = Float.parseFloat(args[3]);
-		float size = Float.parseFloat(args[4]);
-
 		float y = game.getTerrain().getHeight(x, z);
-
-
+		float size = Float.parseFloat(args[4]);
+		
 		Vector3f npcPos = new Vector3f(x, y, z);
 
 		enemyManager.createEnemy(npcID, npcPos, size);
@@ -322,14 +320,14 @@ public class GameClient extends GameConnectionClient {
 		
 		float x = Float.parseFloat(args[1]);
 		float z = Float.parseFloat(args[3]);
-		float size = Float.parseFloat(args[4]);
-
 		float y = game.getTerrain().getHeight(x, z);
+		float size = Float.parseFloat(args[4]);
+		float yaw = Float.parseFloat(args[5]);
 		
 		Vector3f npcPos = new Vector3f(x, y, z);
 
 
-		enemyManager.updateEnemy(npcID, npcPos, size);
+		enemyManager.updateEnemy(npcID, npcPos, size, yaw);
 		checkAvatarNearNPC(npcPos);
 
 	}

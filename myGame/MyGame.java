@@ -54,7 +54,7 @@ public class MyGame extends VariableFrameRateGame
 	private int maxEnemies = 100;
 	private float spawnTimer = 0.0f;
 	private float spawnWait = 2.0f; // spawn every 2 seconds
-	private boolean isEnemyHost = false; // testing enemies server game A true, game B false
+	private boolean isEnemyHost = true; // testing enemies server game A true, game B false
 	private class LocalEnemy {
 		UUID id;
 		GameObject obj;
@@ -103,7 +103,9 @@ public class MyGame extends VariableFrameRateGame
 		dolS = new ImportedModel("dolphinHighPoly.obj");
 		// enemyS = new ImportedModel("enemy.obj");
 		enemyS = new AnimatedShape("enemy.rkm", "enemy.rks"); 
-		enemyS.loadAnimation("WAVE", "wave.rka"); 
+		enemyS.loadAnimation("IDLE", "idle.rka"); 
+		enemyS.loadAnimation("WALK", "walk.rka"); 
+		enemyS.loadAnimation("ATTACK", "attack.rka"); 
 		linxS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(3f, 0f, 0f));
         linyS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 3f, 0f));
         linzS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, -3f));
@@ -157,6 +159,8 @@ public class MyGame extends VariableFrameRateGame
         enemy.setLocalScale(initialScale);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f));
         enemy.setLocalRotation(initialRotation);
+		enemyS.playAnimation("IDLE", 0.5f, AnimatedShape.EndType.LOOP, 0); 
+
 		
 		
 		// build terrain object 
@@ -261,6 +265,7 @@ public class MyGame extends VariableFrameRateGame
 		float y = terr.getHeight(x, z);
 
 		e.setLocalTranslation(new Matrix4f().translation(x, y, z));
+		e.setLocalScale(new Matrix4f().scaling(0.05f));
 	
 	    UUID enemyID = UUID.randomUUID();
 
@@ -444,9 +449,13 @@ public class MyGame extends VariableFrameRateGame
 				break; 
 			case KeyEvent.VK_6: 
 				enemyS.stopAnimation(); 
-				enemyS.playAnimation("WAVE", 0.5f, AnimatedShape.EndType.LOOP, 0); 
-				break; 
-			case KeyEvent.VK_7:
+				enemyS.playAnimation("WALK", 0.5f, AnimatedShape.EndType.LOOP, 0); 
+				break;
+			case KeyEvent.VK_7: 
+				enemyS.stopAnimation(); 
+				enemyS.playAnimation("ATTACK", 0.5f, AnimatedShape.EndType.LOOP, 0); 
+				break;				
+			case KeyEvent.VK_8:
 				enemyS.stopAnimation(); 
 				break; 
 			// show axes
@@ -486,7 +495,11 @@ public class MyGame extends VariableFrameRateGame
 	}
 	
 	public ObjShape getEnemyShape() {
-    return enemyS;
+		return enemyS;
+	}
+	
+	public AnimatedShape getEnemyAnimatedShape() {
+		return enemyS;
 	}
 
 	public TextureImage getEnemyTexture() {

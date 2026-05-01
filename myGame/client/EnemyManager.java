@@ -23,11 +23,12 @@ public class EnemyManager {
         enemies.add(e);
     }
 
-    public void updateEnemy(UUID id, Vector3f p, float size) {
+    public void updateEnemy(UUID id, Vector3f p, float size, float yawAmt) {
         GhostEnemy e = findEnemy(id);
         if (e != null) {
             e.setLocalLocation(p);
 			e.setSize(size);
+			e.setYaw(yawAmt);
         }
     }
 

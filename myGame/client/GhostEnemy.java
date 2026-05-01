@@ -22,4 +22,8 @@ public class GhostEnemy extends GameObject {
 	public void setSize(float size) {
 		setLocalScale(new Matrix4f().scaling(size));
 	}
+	
+	public void setYaw(float yawAmt) {
+		setLocalRotation(new Matrix4f().rotationY(yawAmt));
+	}
 }

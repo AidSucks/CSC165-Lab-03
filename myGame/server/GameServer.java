@@ -283,7 +283,8 @@ public class GameServer extends GameConnectionServer<UUID> {
 				String.valueOf(npc.getX()),
 				String.valueOf(npc.getY()),
 				String.valueOf(npc.getZ()),
-				String.valueOf(npc.getSize())
+				String.valueOf(npc.getSize()),
+				String.valueOf(npc.getYaw())
 			);
 
 			sendPacketToAll(message);

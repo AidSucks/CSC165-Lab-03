@@ -6,11 +6,13 @@ public class NPC {
     private UUID id;
     private double x, y, z;
     private double dir = 0.05;
-    private double size = 1.0;
-	
+    private double size = 0.05;
+    private double yawAmt = 0.0;
 	private double targetX, targetY, targetZ;
 	private boolean chasing = false;
 	private double speed = 0.09;
+	private String state = "IDLE";
+
 
     public NPC() {
         id = UUID.randomUUID();
@@ -20,27 +22,24 @@ public class NPC {
     }
 
     public UUID getID() { return id; }
+	
+	// getter
     public double getX() { return x; }
     public double getY() { return y; }
     public double getZ() { return z; }
-
     public double getSize() { return size; }
-
-    public void getBig() {
+	public double getYaw() { return yawAmt; }
+	public String state() {return state;}
+	public void getBig() {
         size = 3.0;
     }
-
+	
     public void getSmall() {
-        size = 1.0;
+        size = 0.01;
     }
 	
-	public void setChasing(boolean value) {
-		chasing = value;
-	}
-
-	public boolean isChasing() {
-		return chasing;
-	}
+	// setter
+	public void  setState(String state) {this.state = state;}
 	
 	public void setLocation(double x, double y, double z) {
 		this.x = x;
@@ -54,19 +53,33 @@ public class NPC {
 		targetZ = z;
 	}
 	
+	public void setChasing(boolean value) {
+		chasing = value;
+	}
+
+	public boolean isChasing() {
+		return chasing;
+	}
+	
 	public void updateLocation() {
 		if (chasing) {
 			double dx = targetX - x;
 			double dz = targetZ - z;
 
 			double dist = Math.sqrt(dx * dx + dz * dz);
-
+			
 			if (dist > 0.1) {
+				
+				// move
 				x += (dx / dist) * speed;
 				z += (dz / dist) * speed;
+				
+				// rote
+				yawAmt = Math.atan2(dx, dz);
 			}
 		} else {
-			if (x > 3) dir = -0.05;
+			if (x > 3) 
+				dir = -0.05;
 			if (x < -3) dir = 0.05;
 			x = x + dir;
 		}
