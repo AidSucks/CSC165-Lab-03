@@ -328,7 +328,8 @@ public class MyGame extends VariableFrameRateGame
 		im.update(dt);
 		
 		// enemy animation update
-		enemyS.updateAnimation(); 
+		enemyS.updateAnimation();
+		gameClient.getEnemyManager().updateAnimations();
 		
 		// camera update
 		orbitCamera.updateCameraPosition();

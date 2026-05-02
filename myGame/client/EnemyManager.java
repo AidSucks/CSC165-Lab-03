@@ -14,21 +14,23 @@ public class EnemyManager {
         game = g;
     }
 
-    public void createEnemy(UUID id, Vector3f p, float size) {
+    public void createEnemy(UUID id, Vector3f p, float size, String state) {
         if (findEnemy(id) != null) return;
 
-        GhostEnemy e = new GhostEnemy(id, game.getEnemyShape(), game.getEnemyTexture(), p);
+        GhostEnemy e = new GhostEnemy(id, game.getEnemyAnimatedShape(), game.getEnemyTexture(), p);
         e.setSize(size);
         // e.setLocalRotation(new Matrix4f().rotationY((float)Math.toRadians(180.0f)));
+		e.playAnimation("IDLE");
         enemies.add(e);
     }
 
-    public void updateEnemy(UUID id, Vector3f p, float size, float yawAmt) {
+    public void updateEnemy(UUID id, Vector3f p, float size, float yawAmt, String state) {
         GhostEnemy e = findEnemy(id);
         if (e != null) {
             e.setLocalLocation(p);
 			e.setSize(size);
 			e.setYaw(yawAmt);
+			e.playAnimation(state);
         }
     }
 
@@ -47,5 +49,12 @@ public class EnemyManager {
             }
         }
         return null;
+    }
+	
+	public void updateAnimations() {
+		// System.out.println("game enemy manager updateAnimations");
+        for (GhostEnemy e : enemies) {
+            e.updateAnimation();
+        }
     }
 }

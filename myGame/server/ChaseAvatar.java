@@ -21,7 +21,7 @@ public class ChaseAvatar extends BTAction {
         );
 
         npc.setChasing(true);
-        System.out.println("NPC chasing avatar");
+        // System.out.println("NPC chasing avatar");
 
         return BTStatus.BH_SUCCESS;
     }

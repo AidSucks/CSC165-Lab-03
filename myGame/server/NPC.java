@@ -29,7 +29,7 @@ public class NPC {
     public double getZ() { return z; }
     public double getSize() { return size; }
 	public double getYaw() { return yawAmt; }
-	public String state() {return state;}
+	public String getState() {return state;}
 	public void getBig() {
         size = 3.0;
     }
@@ -38,8 +38,6 @@ public class NPC {
         size = 0.01;
     }
 	
-	// setter
-	public void  setState(String state) {this.state = state;}
 	
 	public void setLocation(double x, double y, double z) {
 		this.x = x;
@@ -62,13 +60,17 @@ public class NPC {
 	}
 	
 	public void updateLocation() {
+		
 		if (chasing) {
 			double dx = targetX - x;
 			double dz = targetZ - z;
 
 			double dist = Math.sqrt(dx * dx + dz * dz);
 			
+			// System.out.println("in npc state: " + state);
+			
 			if (dist > 0.1) {
+				state = "WALK";
 				
 				// move
 				x += (dx / dist) * speed;
@@ -76,6 +78,8 @@ public class NPC {
 				
 				// rote
 				yawAmt = Math.atan2(dx, dz);
+			} else {
+				state = "ATTACK";
 			}
 		} else {
 			if (x > 3) 

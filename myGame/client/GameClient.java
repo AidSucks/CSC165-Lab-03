@@ -26,6 +26,15 @@ public class GameClient extends GameConnectionClient {
 		this.ghostManager = new GhostManager(this.game);
 		this.enemyManager = new EnemyManager(this.game);
 	}
+	
+	// getter
+	public GhostManager getGhostManager() {
+		return ghostManager;
+	}
+	
+	public EnemyManager getEnemyManager() {
+		return enemyManager;
+	}
 
 	@Override
 	public void processPacket(Object object)
@@ -258,7 +267,7 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		enemyManager.createEnemy(enemyID, spawnPosition, 1.0f);
+		// enemyManager.createEnemy(enemyID, spawnPosition, 1.0f);
 	}
 
 	private void runEnemyMove(String[] args)
@@ -271,7 +280,7 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		enemyManager.updateEnemy(enemyID, nextPosition, 1.0f, 0.0f);
+		// enemyManager.updateEnemy(enemyID, nextPosition, 1.0f, 0.0f);
 	}
 
 	private void runEnemyDelete(String[] args)
@@ -280,9 +289,7 @@ public class GameClient extends GameConnectionClient {
 		enemyManager.removeEnemy(enemyID);
 	}
 	
-	public GhostManager getGhostManager() {
-		return ghostManager;
-	}
+
 	
 	// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
 	
@@ -308,11 +315,14 @@ public class GameClient extends GameConnectionClient {
 		float z = Float.parseFloat(args[3]);
 		float y = game.getTerrain().getHeight(x, z);
 		float size = Float.parseFloat(args[4]);
-		
+		String state = args[5];
+
 		Vector3f npcPos = new Vector3f(x, y, z);
 
-		enemyManager.createEnemy(npcID, npcPos, size);
+		enemyManager.createEnemy(npcID, npcPos, size, state);
 		checkAvatarNearNPC(npcPos);
+		
+		System.out.println("game client runCreateNPC");
 	}
 	
 	private void runMoveNPC(String[] args) {
@@ -323,13 +333,14 @@ public class GameClient extends GameConnectionClient {
 		float y = game.getTerrain().getHeight(x, z);
 		float size = Float.parseFloat(args[4]);
 		float yaw = Float.parseFloat(args[5]);
-		
+		String state = args[6];
+
 		Vector3f npcPos = new Vector3f(x, y, z);
-
-
-		enemyManager.updateEnemy(npcID, npcPos, size, yaw);
+		
+		enemyManager.updateEnemy(npcID, npcPos, size, yaw, state);
 		checkAvatarNearNPC(npcPos);
-
+		
+		// System.out.println("game client runMoveNPC");
 	}
 	
 	private void checkAvatarNearNPC(Vector3f npcPos) {
@@ -349,7 +360,7 @@ public class GameClient extends GameConnectionClient {
 					String.valueOf(avatarPos.y),
 					String.valueOf(avatarPos.z)
 				));
-				System.out.println("client sent isnear");
+				// System.out.println("client sent isnear");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

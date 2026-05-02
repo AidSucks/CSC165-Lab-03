@@ -284,10 +284,12 @@ public class GameServer extends GameConnectionServer<UUID> {
 				String.valueOf(npc.getY()),
 				String.valueOf(npc.getZ()),
 				String.valueOf(npc.getSize()),
-				String.valueOf(npc.getYaw())
+				String.valueOf(npc.getYaw()),
+				npc.getState()
 			);
-
 			sendPacketToAll(message);
+			// System.out.println("game server sendNPCinfo");
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -303,10 +305,13 @@ public class GameServer extends GameConnectionServer<UUID> {
 				String.valueOf(npc.getX()),
 				String.valueOf(npc.getY()),
 				String.valueOf(npc.getZ()),
-				String.valueOf(npc.getSize())
+				String.valueOf(npc.getSize()),
+				npc.getState()
 			);
 
 			sendPacket(message, clientID);
+			// System.out.println("game server sendNPCstart");
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -322,10 +327,12 @@ public class GameServer extends GameConnectionServer<UUID> {
 				String.valueOf(npc.getX()),
 				String.valueOf(npc.getY()),
 				String.valueOf(npc.getZ()),
-				String.valueOf(npc.getSize())
+				String.valueOf(npc.getSize()),
+				npc.getState()
 			);
 
 			sendPacketToAll(message);
+			// System.out.println("game server sendNPCstartToAll");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
