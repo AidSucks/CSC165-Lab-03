@@ -31,8 +31,8 @@ public class GameServer extends GameConnectionServer<UUID> {
 	{
 		super(localPort, ProtocolType.UDP);
 		
-		npcCtrl = new NPCcontroller(this);
-        npcCtrl.start();
+		//npcCtrl = new NPCcontroller(this);
+        //npcCtrl.start();
 	}
 	
 	// public void sendCheckForAvatarNear() {
@@ -55,6 +55,10 @@ public class GameServer extends GameConnectionServer<UUID> {
 	public void processPacket(Object object, InetAddress senderIP, int senderPort)
 	{	
 		String packet = (String) object;
+
+		// Lost packet
+		if(packet == null) return;
+
 		String[] tokens = packet.split(";");
 		
 		if(tokens.length <= 0) return;
@@ -75,6 +79,9 @@ public class GameServer extends GameConnectionServer<UUID> {
 		}
 		else if(tokens[0].equalsIgnoreCase("move")) {
 			runMove(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("rotate")) {
+			runRotate(args);
 		}
 		// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
 		else if(tokens[0].equalsIgnoreCase("enemy-create")) {
@@ -192,6 +199,23 @@ public class GameServer extends GameConnectionServer<UUID> {
 		}
 	}
 	
+	// IN: rotate;<uuid>;<x>;<y>;<z>;<w>
+	// OUT: rotate;<uuid>;<x>;<y>;<z>;<w>
+	private void runRotate(String[] args)
+	{
+		try {
+			
+			UUID clientID = UUID.fromString(args[0]);
+
+			String rotation = String.join(";", "rotate", clientID.toString(), args[1], args[2], args[3], args[4]);
+
+			forwardPacketToAll(rotation, clientID);
+
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
 	
 	// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
 	

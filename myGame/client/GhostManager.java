@@ -3,6 +3,8 @@ package myGame.client;
 import java.util.UUID;
 import java.util.Vector;
 
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import myGame.MyGame;
@@ -53,7 +55,7 @@ public class GhostManager {
 		return null;
 	}
 
-	public void updateGhost(UUID id, Vector3f newPosition)
+	public void updateGhostMove(UUID id, Vector3f newPosition)
 	{
 		GhostAvatar affectedGhost = this.getAvatarByID(id);
 
@@ -63,5 +65,17 @@ public class GhostManager {
 		}
 
 		affectedGhost.setLocalLocation(newPosition);
+	}
+
+	public void updateGhostRotate(UUID id, Quaternionf newRotation)
+	{
+		GhostAvatar affectedGhost = this.getAvatarByID(id);
+
+		if(affectedGhost == null) {
+			System.err.println("Avatar not found: " + id.toString());
+			return;
+		}
+
+		affectedGhost.setLocalRotation(new Matrix4f().rotation(newRotation));
 	}
 }

@@ -41,6 +41,9 @@ public class GameClient extends GameConnectionClient {
 	{
 		String packet = (String) object;
 
+		// Lost packet
+		if(packet == null) return;
+
 		String[] tokens = packet.split(";");
 
 		if(tokens.length <= 0) return;
@@ -64,6 +67,9 @@ public class GameClient extends GameConnectionClient {
 		}
 		else if(tokens[0].equalsIgnoreCase("move")) {
 			runMove(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("rotate")){
+			runRotate(args);
 		}
 		// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
 		else if(tokens[0].equalsIgnoreCase("enemy-create")) {
@@ -117,6 +123,26 @@ public class GameClient extends GameConnectionClient {
 				String.valueOf(position.x),
 				String.valueOf(position.y),
 				String.valueOf(position.z)
+			));
+
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public void sendRotate(Quaternionf quat)
+	{
+
+		try {
+
+			sendPacket(
+				String.join(";", 
+				"rotate",
+				this.clientUUID.toString(),
+				String.valueOf(quat.x),
+				String.valueOf(quat.y),
+				String.valueOf(quat.z),
+				String.valueOf(quat.w)
 			));
 
 		} catch(IOException ex) {
@@ -210,7 +236,21 @@ public class GameClient extends GameConnectionClient {
 			Float.parseFloat(args[3])
 		);
 
-		ghostManager.updateGhost(ghostID, nextPosition);
+		ghostManager.updateGhostMove(ghostID, nextPosition);
+	}
+
+	private void runRotate(String[] args)
+	{
+		UUID ghostID = UUID.fromString(args[0]);
+
+		Quaternionf nextRotation = new Quaternionf(
+			Float.parseFloat(args[1]),
+			Float.parseFloat(args[2]),
+			Float.parseFloat(args[3]),
+			Float.parseFloat(args[4])
+		);
+
+		ghostManager.updateGhostRotate(ghostID, nextRotation);
 	}
 	
 	// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++

@@ -317,8 +317,16 @@ public class MyGame extends VariableFrameRateGame
 	{	
 		if(this.gameClient != null) {
 			this.gameClient.processPackets();
+
+			this.gameClient.sendMove(this.avatar.getPhysicsObject().getLocation());
+
+			Quaternionf rot = new Quaternionf();
+
+			this.avatar.getWorldRotation().getNormalizedRotation(rot);
+
+			this.gameClient.sendRotate(rot);
 		}
-		
+
 		// control xyz axes visibility
         if (isxyzAxesVisible); {
             xyzAxesVisible();
