@@ -5,7 +5,7 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.UUID;
 
-import org.joml.Vector3f;
+import org.joml.*;
 
 import myGame.MyGame;
 import tage.networking.client.GameConnectionClient;
@@ -15,6 +15,7 @@ public class GameClient extends GameConnectionClient {
 	private UUID clientUUID;
 	private MyGame game;
 	private GhostManager ghostManager;
+	private EnemyManager enemyManager;
 
 	public GameClient(InetAddress remoteAddr, int remotePort, MyGame game) throws IOException 
 	{
@@ -23,6 +24,16 @@ public class GameClient extends GameConnectionClient {
 		this.clientUUID = UUID.randomUUID();
 		this.game = game;
 		this.ghostManager = new GhostManager(this.game);
+		this.enemyManager = new EnemyManager(this.game);
+	}
+	
+	// getter
+	public GhostManager getGhostManager() {
+		return ghostManager;
+	}
+	
+	public EnemyManager getEnemyManager() {
+		return enemyManager;
 	}
 
 	@Override
@@ -53,6 +64,23 @@ public class GameClient extends GameConnectionClient {
 		}
 		else if(tokens[0].equalsIgnoreCase("move")) {
 			runMove(args);
+		}
+		// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
+		else if(tokens[0].equalsIgnoreCase("enemy-create")) {
+			runEnemyCreate(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("enemy-move")) {
+			runEnemyMove(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("enemy-delete")) {
+			runEnemyDelete(args);
+		}
+		// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
+		else if(tokens[0].equalsIgnoreCase("createNPC")) {
+			runCreateNPC(args);
+		}
+		else if(tokens[0].equalsIgnoreCase("mnpc")) {
+			runMoveNPC(args);
 		}
 	}
 
@@ -184,4 +212,161 @@ public class GameClient extends GameConnectionClient {
 
 		ghostManager.updateGhost(ghostID, nextPosition);
 	}
+	
+	// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
+	
+	public void sendEnemyCreate(UUID enemyID, Vector3f position)
+	{
+		try {
+			sendPacket(String.join(";",
+				"enemy-create",
+				enemyID.toString(),
+				String.valueOf(position.x),
+				String.valueOf(position.y),
+				String.valueOf(position.z)
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public void sendEnemyMove(UUID enemyID, Vector3f position)
+	{
+		try {
+			sendPacket(String.join(";",
+				"enemy-move",
+				enemyID.toString(),
+				String.valueOf(position.x),
+				String.valueOf(position.y),
+				String.valueOf(position.z)
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public void sendEnemyDelete(UUID enemyID)
+	{
+		try {
+			sendPacket(String.join(";",
+				"enemy-delete",
+				enemyID.toString()
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	private void runEnemyCreate(String[] args)
+	{
+		UUID enemyID = UUID.fromString(args[0]);
+
+		Vector3f spawnPosition = new Vector3f(
+			Float.parseFloat(args[1]),
+			Float.parseFloat(args[2]),
+			Float.parseFloat(args[3])
+		);
+
+		// enemyManager.createEnemy(enemyID, spawnPosition, 1.0f);
+	}
+
+	private void runEnemyMove(String[] args)
+	{
+		UUID enemyID = UUID.fromString(args[0]);
+
+		Vector3f nextPosition = new Vector3f(
+			Float.parseFloat(args[1]),
+			Float.parseFloat(args[2]),
+			Float.parseFloat(args[3])
+		);
+
+		// enemyManager.updateEnemy(enemyID, nextPosition, 1.0f, 0.0f);
+	}
+
+	private void runEnemyDelete(String[] args)
+	{
+		UUID enemyID = UUID.fromString(args[0]);
+		enemyManager.removeEnemy(enemyID);
+	}
+	
+
+	
+	// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
+	
+	public void sendSpawnNPCRequest(Vector3f avatarPos) {
+		try {
+			sendPacket(String.join(
+				";",
+				"spawnNPC",
+				clientUUID.toString(),
+				String.valueOf(avatarPos.x),
+				String.valueOf(avatarPos.y),
+				String.valueOf(avatarPos.z)
+			));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void runCreateNPC(String[] args) {
+		UUID npcID = UUID.fromString(args[0]);
+		
+		float x = Float.parseFloat(args[1]);
+		float z = Float.parseFloat(args[3]);
+		float y = game.getTerrain().getHeight(x, z);
+		float size = Float.parseFloat(args[4]);
+		String state = args[5];
+
+		Vector3f npcPos = new Vector3f(x, y, z);
+
+		enemyManager.createEnemy(npcID, npcPos, size, state);
+		checkAvatarNearNPC(npcPos);
+		
+		System.out.println("game client runCreateNPC");
+	}
+	
+	private void runMoveNPC(String[] args) {
+		UUID npcID = UUID.fromString(args[0]);
+		
+		float x = Float.parseFloat(args[1]);
+		float z = Float.parseFloat(args[3]);
+		float y = game.getTerrain().getHeight(x, z);
+		float size = Float.parseFloat(args[4]);
+		float yaw = Float.parseFloat(args[5]);
+		String state = args[6];
+
+		Vector3f npcPos = new Vector3f(x, y, z);
+		
+		enemyManager.updateEnemy(npcID, npcPos, size, yaw, state);
+		checkAvatarNearNPC(npcPos);
+		
+		// System.out.println("game client runMoveNPC");
+	}
+	
+	private void checkAvatarNearNPC(Vector3f npcPos) {
+		Vector3f avatarPos = game.getAvatar().getWorldLocation();
+
+		float distance = avatarPos.distance(npcPos);
+
+		// System.out.println("Distance to NPC = " + distance);
+
+		if (distance < 3.0f) {
+			try {
+				sendPacket(String.join(
+					";",
+					"isnear",
+					clientUUID.toString(),
+					String.valueOf(avatarPos.x),
+					String.valueOf(avatarPos.y),
+					String.valueOf(avatarPos.z)
+				));
+				// System.out.println("client sent isnear");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	
+
 }

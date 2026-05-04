@@ -3,6 +3,7 @@ package myGame;
 import tage. * ;
 import tage.shapes. * ;
 import java.util.ArrayList;
+import java.util.UUID; 
 
 import java.lang.Math;
 import java.net.InetAddress;
@@ -27,6 +28,7 @@ public class MyGame extends VariableFrameRateGame
 	
 	private boolean isxyzAxesVisible = true;
 	private boolean paused=false;
+	private boolean isGameStart=false;
 	
 	private int counter=0;
 
@@ -40,7 +42,7 @@ public class MyGame extends VariableFrameRateGame
 
 	private GameObject enemy, x, y, z, terr;
 	// shape
-	private ObjShape dolS, enemyS, linxS, linyS, linzS, terrS;
+	private ObjShape dolS, linxS, linyS, linzS, terrS;
 	// texture
 	private TextureImage doltx, enemyTex, hills, floor;
 	// light
@@ -55,10 +57,24 @@ public class MyGame extends VariableFrameRateGame
     private Viewport rightVp;
 	private Vector3f overheadView = new Vector3f(0, 18, 0);
 	
-	private ArrayList<GameObject> enemies = new ArrayList<>();
+	// enemies
+	private AnimatedShape enemyS;
+	
 	private int maxEnemies = 100;
 	private float spawnTimer = 0.0f;
 	private float spawnWait = 2.0f; // spawn every 2 seconds
+	private boolean isEnemyHost = true; // testing enemies server game A true, game B false
+	private class LocalEnemy {
+		UUID id;
+		GameObject obj;
+
+		LocalEnemy(UUID id, GameObject obj) {
+			this.id = id;
+			this.obj = obj;
+		}
+	}
+	private ArrayList<LocalEnemy> enemies = new ArrayList<>();
+
 
 	public MyGame() { 
 		super();
@@ -94,7 +110,11 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes(){
 		dolS = new ImportedModel("dolphinHighPoly.obj");
-		enemyS = new ImportedModel("enemy.obj");
+		// enemyS = new ImportedModel("enemy.obj");
+		enemyS = new AnimatedShape("enemy.rkm", "enemy.rks"); 
+		enemyS.loadAnimation("IDLE", "idle.rka"); 
+		enemyS.loadAnimation("WALK", "walk.rka"); 
+		enemyS.loadAnimation("ATTACK", "attack.rka"); 
 		linxS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(3f, 0f, 0f));
         linyS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 3f, 0f));
         linzS = new Line(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, -3f));
@@ -142,10 +162,12 @@ public class MyGame extends VariableFrameRateGame
 		enemy = new GameObject(GameObject.root(), enemyS, enemyTex);
 		initialTranslation = (new Matrix4f()).translation(0f, 1f, 0.5f);
 		enemy.setLocalTranslation(initialTranslation);
-		initialScale = (new Matrix4f()).scaling(1f);
+		initialScale = (new Matrix4f()).scaling(0.05f);
         enemy.setLocalScale(initialScale);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f));
         enemy.setLocalRotation(initialRotation);
+		enemyS.playAnimation("IDLE", 0.5f, AnimatedShape.EndType.LOOP, 0); 
+
 		
 		
 		// build terrain object 
@@ -251,6 +273,7 @@ public class MyGame extends VariableFrameRateGame
 		terr.setPhysicsObject(terrainMesh);
 	}
 	
+	
 	private void spawnEnemy() {
 		GameObject e = new GameObject(GameObject.root(), enemyS, enemyTex);
 
@@ -268,8 +291,15 @@ public class MyGame extends VariableFrameRateGame
 		float y = terr.getHeight(x, z);
 
 		e.setLocalTranslation(new Matrix4f().translation(x, y, z));
+		e.setLocalScale(new Matrix4f().scaling(0.05f));
+	
+	    UUID enemyID = UUID.randomUUID();
 
-		enemies.add(e);
+		enemies.add(new LocalEnemy(enemyID, e));
+
+		if (gameClient != null) {
+			gameClient.sendEnemyCreate(enemyID, new Vector3f(x, y, z));
+		}
 	}
 
 	@Override
@@ -291,15 +321,15 @@ public class MyGame extends VariableFrameRateGame
 		float dt = (float) getDeltaTime();
 		elapsTime += dt;
 		
-		// spawn enemies
-		spawnTimer += dt;
-		if (spawnTimer >= spawnWait && enemies.size() < maxEnemies) {
-			System.out.println("spawn enemies");
-			spawnEnemy();
-			spawnTimer = 0.0f;
-			System.out.println("enemiesSpawn:" + enemies.size());
-
-		}
+		// // spawn enemies
+		// if (isEnemyHost && isGameStart) {
+			// spawnTimer += dt;
+			// if (spawnTimer >= spawnWait && enemies.size() < maxEnemies) {
+				// spawnEnemy();
+				// spawnTimer = 0.0f;
+				// System.out.println("enemiesSpawn:" + enemies.size());
+			// }
+		// }
 
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
@@ -319,6 +349,10 @@ public class MyGame extends VariableFrameRateGame
 		// input update
 		im.update(dt);
 		
+		// enemy animation update
+		enemyS.updateAnimation();
+		gameClient.getEnemyManager().updateAnimations();
+		
 		// camera update
 		orbitCamera.updateCameraPosition();
 
@@ -334,64 +368,71 @@ public class MyGame extends VariableFrameRateGame
 		physicsEngine.update(dt);
 		physicsEngine.detectCollisions();
 		
-		// --------------- enemy walk to player 
-		for (GameObject e : enemies) {
-				Vector3f enemiesPos = e.getWorldLocation();
-				Vector3f playerPos = avatar.getWorldLocation();
+		// // --------------- enemy walk to player 
+		// if (isEnemyHost) {
+			// for (LocalEnemy le : enemies) {
+					// GameObject e = le.obj;
+					// Vector3f enemiesPos = e.getWorldLocation();
+					// Vector3f playerPos = avatar.getWorldLocation();
 
-				// distance^2 = (x2 - x1)^2 + (y2 - y1)^2
-				float dxPlayer = playerPos.x() - enemiesPos.x();
-				float dzPlayer = playerPos.z() - enemiesPos.z();
-				// distance^2 b/w player and enemy
-				float distToPlayerSq = dxPlayer * dxPlayer + dzPlayer * dzPlayer;
-				
-				float enemyAttackRange = 0.3f;
-
-				// if player and enemy distance greater then enemy attack distance,
-				// enemy walk to player
-				if (distToPlayerSq > enemyAttackRange * enemyAttackRange) {
-					// direction to the player
-					Vector3f dir = new Vector3f(dxPlayer, 0, dzPlayer);
-					// dir positive
-					dir.normalize();
-
-					// --------------- aviod enemy overlap ---------------
-					Vector3f push = new Vector3f(0, 0, 0);
-					float minDist = 0.3f;
-
-					for (GameObject other : enemies) {
-						
-						Vector3f otherEnemiesPos = other.getWorldLocation();
-
-						float dxEnemies = enemiesPos.x() - otherEnemiesPos.x();
-						float dzEnemies = enemiesPos.z() - otherEnemiesPos.z();
-						float distToEnemiesSq = dxEnemies * dxEnemies + dzEnemies * dzEnemies;
-						// System.out.println("distToEnemiesSq:" + distToEnemiesSq);
-
-						// if enemies distance less then min enemies distance (enemies too close together),
-						// push enemies back
-						if (distToEnemiesSq < minDist * minDist && distToEnemiesSq > 0.0001f) {
-							float dist = (float)Math.sqrt(distToEnemiesSq);
-							push.x += dxEnemies / dist;
-							push.z += dzEnemies / dist;
-						}
-					}
+					// // distance^2 = (x2 - x1)^2 + (y2 - y1)^2
+					// float dxPlayer = playerPos.x() - enemiesPos.x();
+					// float dzPlayer = playerPos.z() - enemiesPos.z();
+					// // distance^2 b/w player and enemy
+					// float distToPlayerSq = dxPlayer * dxPlayer + dzPlayer * dzPlayer;
 					
+					// float enemyAttackRange = 0.3f;
 
-					// System.out.println("push.lengthSquared():" + push.lengthSquared());
-					if (push.lengthSquared() > 0.0001f) {
+					// // if player and enemy distance greater then enemy attack distance,
+					// // enemy walk to player
+					// if (distToPlayerSq > enemyAttackRange * enemyAttackRange) {
+						// // direction to the player
+						// Vector3f dir = new Vector3f(dxPlayer, 0, dzPlayer);
+						// // dir positive
+						// dir.normalize();
+
+						// // --------------- aviod enemy overlap ---------------
+						// Vector3f push = new Vector3f(0, 0, 0);
+						// float minDist = 0.3f;
+
+						// for (LocalEnemy otherEnemy : enemies) {
+							
+							// Vector3f otherEnemiesPos = otherEnemy.obj.getWorldLocation();
+
+							// float dxEnemies = enemiesPos.x() - otherEnemiesPos.x();
+							// float dzEnemies = enemiesPos.z() - otherEnemiesPos.z();
+							// float distToEnemiesSq = dxEnemies * dxEnemies + dzEnemies * dzEnemies;
+							// // System.out.println("distToEnemiesSq:" + distToEnemiesSq);
+
+							// // if enemies distance less then min enemies distance (enemies too close together),
+							// // push enemies back
+							// if (distToEnemiesSq < minDist * minDist && distToEnemiesSq > 0.0001f) {
+								// float dist = (float)Math.sqrt(distToEnemiesSq);
+								// push.x += dxEnemies / dist;
+								// push.z += dzEnemies / dist;
+							// }
+						// }
 						
-						push.normalize();
-					}
-					float speed = 2.0f;
-					float newX = enemiesPos.x() + (dir.x() + push.x) * speed * dt;
-					float newZ = enemiesPos.z() + (dir.z() + push.z) * speed * dt;
-					float newY = terr.getHeight(newX, newZ);
 
-					e.setLocalLocation(new Vector3f(newX, newY, newZ));
-				}
-		}
-	
+						// // System.out.println("push.lengthSquared():" + push.lengthSquared());
+						// if (push.lengthSquared() > 0.0001f) {
+							
+							// push.normalize();
+						// }
+						// float speed = 2.0f;
+						// float newX = enemiesPos.x() + (dir.x() + push.x) * speed * dt;
+						// float newZ = enemiesPos.z() + (dir.z() + push.z) * speed * dt;
+						// float newY = terr.getHeight(newX, newZ);
+						// Vector3f newPos = new Vector3f(newX, newY, newZ);
+						
+						// e.setLocalLocation(newPos);
+						
+						// if (gameClient != null) {
+							// gameClient.sendEnemyMove(le.id, newPos);
+						// }
+					// }
+			// }
+		// }
 	}
 
 	@Override
@@ -405,8 +446,15 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void keyPressed(KeyEvent e)
 	{	switch (e.getKeyCode())
-		{	case KeyEvent.VK_C:
-				counter++;
+		{	case KeyEvent.VK_0:
+				System.out.println("pressed 0");
+				isGameStart = true;
+				break;
+			case KeyEvent.VK_T:
+				if (gameClient != null) {
+					Vector3f avatarPos = avatar.getWorldLocation();
+					gameClient.sendSpawnNPCRequest(avatarPos);
+				}
 				break;
 			case KeyEvent.VK_1:
 				paused = !paused;
@@ -433,6 +481,17 @@ public class MyGame extends VariableFrameRateGame
 				break; 
 			case KeyEvent.VK_P: 
 			    terr.getRenderStates().disableRendering();
+				break; 
+			case KeyEvent.VK_6: 
+				enemyS.stopAnimation(); 
+				enemyS.playAnimation("WALK", 0.5f, AnimatedShape.EndType.LOOP, 0); 
+				break;
+			case KeyEvent.VK_7: 
+				enemyS.stopAnimation(); 
+				enemyS.playAnimation("ATTACK", 0.5f, AnimatedShape.EndType.LOOP, 0); 
+				break;				
+			case KeyEvent.VK_8:
+				enemyS.stopAnimation(); 
 				break; 
 			// show axes
 			case KeyEvent.VK_V:
@@ -472,5 +531,21 @@ public class MyGame extends VariableFrameRateGame
 
 	public GameClient getGameClient() {
 		return this.gameClient;
+	}
+	
+	public ObjShape getEnemyShape() {
+		return enemyS;
+	}
+	
+	public AnimatedShape getEnemyAnimatedShape() {
+		return enemyS;
+	}
+
+	public TextureImage getEnemyTexture() {
+		return enemyTex;
+	}
+	
+	public GameObject getTerrain() {
+		return terr;
 	}
 }
