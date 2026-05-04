@@ -38,7 +38,7 @@ public class Player extends GameObject
 
 		PhysicsObject physicsObject = MyGame.getEngine().getSceneGraph().addPhysicsCapsule(
 			0.5f,
-			new Vector3f(0, 10, 0),
+			new Vector3f(0, 20f, 0),
 			new Quaternionf().rotationAxis((float) (Math.PI / 2), new Vector3f(0, 0, 1)),
 			0,
 			0.25f, 
@@ -54,9 +54,13 @@ public class Player extends GameObject
 
 	public UUID getUUID() { return this.uuid; }
 
+	public void setIsOnGround(boolean b) { this.isOnGround = b; }
+
+	public boolean isOnGround() { return this.isOnGround; }
+
 	public void moveAlongForward(float accel)
 	{
-		final float maxSpeed = 5f;
+		final float maxSpeed = 3f;
 
 		PhysicsObject po = getPhysicsObject();
 
@@ -75,8 +79,6 @@ public class Player extends GameObject
 
 	public void jump(float impulseStrength)
 	{
-		if(!isOnGround) return;
-
 		PhysicsObject po = getPhysicsObject();
 
 		po.applyImpulse(0, impulseStrength, 0, 0, 0, 0);

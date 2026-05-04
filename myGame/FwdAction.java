@@ -63,6 +63,6 @@ public class FwdAction extends AbstractInputAction {
 			player.moveAlongForward(-50f);
         }
 
-		this.game.getGameClient().sendMove(player.getWorldLocation());
+		this.game.getGameClient().sendMove(player.getPhysicsObject().getLocation());
     }
 }

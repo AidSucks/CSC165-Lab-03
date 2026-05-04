@@ -36,6 +36,8 @@ public class MyGame extends VariableFrameRateGame
 
 	private double elapsTime;
 	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
+
+	private PhysicsObject terrainMesh;
 	
 	// object
 	private Player avatar;
@@ -172,10 +174,10 @@ public class MyGame extends VariableFrameRateGame
 		
 		// build terrain object 
 		terr = new GameObject(GameObject.root(), terrS, floor); 
-		initialTranslation = (new Matrix4f()).translation(0f,0f,0f); 
-		terr.setLocalTranslation(initialTranslation); 
+
 		initialScale = (new Matrix4f()).scaling(200.0f, 8.0f, 200.0f); 
 		terr.setLocalScale(initialScale); 
+		
 		terr.setHeightMap(hills); 
 		// set tiling for terrain texture 
 		terr.getRenderStates().setTiling(1); 
@@ -237,10 +239,12 @@ public class MyGame extends VariableFrameRateGame
 		OrbitAzimuthAction azmAction = new OrbitAzimuthAction(this, orbitCamera);
         OrbitElevationAction altAction = new OrbitElevationAction(this, orbitCamera);
         OrbitRadiusAction zoomAction = new OrbitRadiusAction(this, orbitCamera);
+		JumpAction jumpAction = new JumpAction(this);
 		
 		// ----------------- Forward/Backward SECTION -----------------------------
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.W, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.S, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.SPACE, jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		// ----------------- Turn SECTION -----------------------------
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.A, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
         im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -265,10 +269,16 @@ public class MyGame extends VariableFrameRateGame
 		// Initialize Physics objects for player
 		avatar.initializePhysics();
 
-		Quaternionf terrRot = new Quaternionf();
-		Vector3f terrLoc = terr.getWorldLocation();
-		(terr.getWorldRotation()).getNormalizedRotation(terrRot);
-		PhysicsObject terrainMesh = engine.getSceneGraph().addPhysicsStaticTerrainMesh(terrLoc, terrRot, hills, 200, 8f, 100);
+		terrainMesh = engine.getSceneGraph().addPhysicsStaticTerrainMesh(
+			new Vector3f(0, 0, 0),
+			new Quaternionf(), 
+			hills, 
+			200, 
+			8f, 
+			100
+		);
+
+		terrainMesh.setFriction(0.5f);
 
 		terr.setPhysicsObject(terrainMesh);
 	}
@@ -358,11 +368,22 @@ public class MyGame extends VariableFrameRateGame
 
 		for(GameObject go : engine.getSceneGraph().getGameObjects()) {
 
+			// Don't process terrain
+			if(go.isTerrain()) continue;
+
 			PhysicsObject po = go.getPhysicsObject();
 
 			if(po == null) continue;
 			
-			go.setLocalLocation(po.getLocation().lerp(go.getLocalLocation(), 0.75f).add(0, -2f, 0));
+			go.setLocalLocation(new Vector3f(po.getLocation()).lerp(go.getLocalLocation(), 0.25f));
+
+			if(go instanceof Player) {
+
+				float yVel = po.getLinearVelocity()[1];
+
+				if(yVel < 0.5f && yVel > -0.5f && po.getFullCollidedSet().contains(terrainMesh))
+					((Player)go).setIsOnGround(true);
+			}
 		}
 
 		physicsEngine.update(dt);

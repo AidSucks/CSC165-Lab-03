@@ -114,6 +114,8 @@ public class GameServer extends GameConnectionServer<UUID> {
 			// sendNPCstart(clientID);
 			sendExistingEnemiesToClient(clientID);
 
+			System.out.println("Client: " + clientID.toString() + " connected");
+
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
 		}
