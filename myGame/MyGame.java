@@ -14,10 +14,14 @@ import org.joml. * ;
 
 import myGame.client.GameClient;
 import tage.input. * ;
+import tage.physics.PhysicsEngine;
+import tage.physics.PhysicsObject;
 
 public class MyGame extends VariableFrameRateGame
 {
 	private static Engine engine;
+	private PhysicsEngine physicsEngine;
+
 	private InputManager im;
 	private GameClient gameClient;
 	
@@ -25,11 +29,16 @@ public class MyGame extends VariableFrameRateGame
 	private boolean paused=false;
 	
 	private int counter=0;
-	private double lastFrameTime, currFrameTime, elapsTime;
+
+	private static double lastFrameTime, currFrameTime;
+
+	private double elapsTime;
 	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
 	
 	// object
-	private GameObject avatar, enemy, x, y, z, terr;
+	private Player avatar;
+
+	private GameObject enemy, x, y, z, terr;
 	// shape
 	private ObjShape dolS, enemyS, linxS, linyS, linzS, terrS;
 	// texture
@@ -127,9 +136,7 @@ public class MyGame extends VariableFrameRateGame
         (z.getRenderStates()).setColor(new Vector3f(0f, 0f, 1f));
 
 		// build avatar
-		avatar = new GameObject(GameObject.root(), dolS, doltx);
-		initialTranslation = (new Matrix4f()).translation(1.5f, 1f, -2.5f);
-		avatar.setLocalTranslation(initialTranslation);
+		avatar = new Player(dolS, doltx);
 		
 		// build enemy
 		enemy = new GameObject(GameObject.root(), enemyS, enemyTex);
@@ -224,6 +231,25 @@ public class MyGame extends VariableFrameRateGame
 
 		this.setupNetworking();
 	}
+
+	@Override
+	public void initializePhysicsObjects()
+	{
+		float[] gravity = {0f, -5f, 0f};
+		
+		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
+		physicsEngine.setGravity(gravity);
+
+		// Initialize Physics objects for player
+		avatar.initializePhysics();
+
+		Quaternionf terrRot = new Quaternionf();
+		Vector3f terrLoc = terr.getWorldLocation();
+		(terr.getWorldRotation()).getNormalizedRotation(terrRot);
+		PhysicsObject terrainMesh = engine.getSceneGraph().addPhysicsStaticTerrainMesh(terrLoc, terrRot, hills, 200, 8f, 100);
+
+		terr.setPhysicsObject(terrainMesh);
+	}
 	
 	private void spawnEnemy() {
 		GameObject e = new GameObject(GameObject.root(), enemyS, enemyTex);
@@ -259,9 +285,10 @@ public class MyGame extends VariableFrameRateGame
         }
 		
 		// game time
+		// Update delta time
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
-		float dt = (float)((currFrameTime - lastFrameTime) / 1000.0);
+		float dt = (float) getDeltaTime();
 		elapsTime += dt;
 		
 		// spawn enemies
@@ -285,22 +312,27 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
 		
-		// update altitude of avatar based on height map 
-		Vector3f avatorLoc = avatar.getWorldLocation(); 
-		float avatorHeight = terr.getHeight(avatorLoc.x(), avatorLoc.z()); 
-		avatar.setLocalLocation(new Vector3f(avatorLoc.x(), avatorHeight, avatorLoc.z())); 
-		
 		Vector3f enemyLoc = enemy.getWorldLocation(); 
 		float enemyHeight = terr.getHeight(enemyLoc.x(), enemyLoc.z()); 
 		enemy.setLocalLocation(new Vector3f(enemyLoc.x(), enemyHeight, enemyLoc.z())); 
-		
-		
 		
 		// input update
 		im.update(dt);
 		
 		// camera update
 		orbitCamera.updateCameraPosition();
+
+		for(GameObject go : engine.getSceneGraph().getGameObjects()) {
+
+			PhysicsObject po = go.getPhysicsObject();
+
+			if(po == null) continue;
+			
+			go.setLocalLocation(po.getLocation().lerp(go.getLocalLocation(), 0.75f).add(0, -2f, 0));
+		}
+
+		physicsEngine.update(dt);
+		physicsEngine.detectCollisions();
 		
 		// --------------- enemy walk to player 
 		for (GameObject e : enemies) {
@@ -426,12 +458,16 @@ public class MyGame extends VariableFrameRateGame
     }
 	
 	
-	public GameObject getAvatar() {
+	public Player getAvatar() {
         return avatar;
     }
 
 	public static Engine getEngine() {
 		return engine;
+	}
+
+	public static double getDeltaTime() {
+		return (currFrameTime - lastFrameTime) / 1000;
 	}
 
 	public GameClient getGameClient() {

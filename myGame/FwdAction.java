@@ -9,11 +9,12 @@ import org.joml. * ;
 public class FwdAction extends AbstractInputAction {
 
     private MyGame game;
-    private GameObject av;
+    private Player player;
     private Vector3f oldPosition, newPosition;
     private Vector4f fwdDirection;
 
-    public FwdAction(MyGame g) {
+    public FwdAction(MyGame g)
+	{
         game = g;
     }
 
@@ -46,26 +47,22 @@ public class FwdAction extends AbstractInputAction {
         float keyValue = e.getValue();
         // System.out.println("keyValue= " + keyValue);
 
-        av = game.getAvatar();
-        oldPosition = av.getWorldLocation();
+        player = game.getAvatar();
+        oldPosition = player.getWorldLocation();
         fwdDirection = new Vector4f(0f, 0f, 1f, 1f);
-        fwdDirection.mul(av.getWorldRotation());
+        fwdDirection.mul(player.getWorldRotation());
         fwdDirection.mul(moveSpeed * time);
 
         // key forward
         if (e.getComponent().getName().equals("W")) {
-            // System.out.println("OBJ pressed W");
-            newPosition = new Vector3f(oldPosition).add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
+			player.moveAlongForward(50f);
         }
 
         // key backward
         if (e.getComponent().getName().equals("S")) {
-            // System.out.println("Obj pressed S");
-            newPosition = new Vector3f(oldPosition).sub(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
+			player.moveAlongForward(-50f);
         }
 
-        av.setLocalLocation(newPosition);
-
-		this.game.getGameClient().sendMove(av.getWorldLocation());
+		this.game.getGameClient().sendMove(player.getWorldLocation());
     }
 }
