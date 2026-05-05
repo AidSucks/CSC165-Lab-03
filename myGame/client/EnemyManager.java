@@ -4,15 +4,15 @@ import java.util.ArrayList;
 import java.util.UUID;
 import org.joml.*;
 import myGame.MyGame;
-import tage.*;
 
 public class EnemyManager {
-    private MyGame game;
+
+	MyGame game;
     private ArrayList<GhostEnemy> enemies = new ArrayList<>();
 
-    public EnemyManager(MyGame g) {
-        game = g;
-    }
+    public EnemyManager(MyGame game) {
+		this.game = game;
+	}
 
     public void createEnemy(UUID id, Vector3f p, float size, String state) {
         if (findEnemy(id) != null) return;
@@ -37,7 +37,7 @@ public class EnemyManager {
     public void removeEnemy(UUID id) {
         GhostEnemy e = findEnemy(id);
         if (e != null) {
-            game.getEngine().getSceneGraph().removeGameObject(e);
+            MyGame.getEngine().getSceneGraph().removeGameObject(e);
             enemies.remove(e);
         }
     }

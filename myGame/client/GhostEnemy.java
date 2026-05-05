@@ -4,7 +4,6 @@ import java.util.UUID;
 import org.joml.*;
 import tage.*;
 import tage.TextureImage;
-import tage.ObjShape;
 import tage.shapes.AnimatedShape;
 
 public class GhostEnemy extends GameObject {

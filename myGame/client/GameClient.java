@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.joml.*;
 
 import myGame.MyGame;
+import myGame.networking.*;
 import tage.networking.client.GameConnectionClient;
 
 public class GameClient extends GameConnectionClient {
@@ -16,6 +17,8 @@ public class GameClient extends GameConnectionClient {
 	private MyGame game;
 	private GhostManager ghostManager;
 	private EnemyManager enemyManager;
+
+	private boolean isConnected = false;
 
 	public GameClient(InetAddress remoteAddr, int remotePort, MyGame game) throws IOException 
 	{
@@ -36,66 +39,108 @@ public class GameClient extends GameConnectionClient {
 		return enemyManager;
 	}
 
+	public boolean getIsConnected() {
+		return this.isConnected;
+	}
+
 	@Override
 	public void processPacket(Object object)
 	{
-		String packet = (String) object;
+		if(object == null || !(object instanceof GameServerPacket)) return;
 
-		// Lost packet
-		if(packet == null) return;
+		GameServerPacket packet = (GameServerPacket) object;
 
-		String[] tokens = packet.split(";");
+		if(packet instanceof ConnectServerPacket connectPacket)
+			handleConnect(connectPacket);
+		else if(packet instanceof DisconnectServerPacket disconnectPacket) {
+			handleDisconnect(disconnectPacket);
+		}
+		else if(packet instanceof CreateEntityServerPacket createEntityPacket) {
+			handleCreateEntity(createEntityPacket);
+		}
+		else if(packet instanceof UpdateEntityServerPacket updateEntityPacket) {
+			handleUpdateEntity(updateEntityPacket);
+		}
+		else if(packet instanceof DeleteEntityServerPacket deleteEntityPacket) {
+			handleDeleteEntity(deleteEntityPacket);
+		}
+		else if(packet instanceof GetEntitiesServerPacket getEntitiesPacket) {
+			handleGetEntities(getEntitiesPacket);
+		}
+	}
 
-		if(tokens.length <= 0) return;
+	private void handleConnect(ConnectServerPacket connectPacket) {
 
-		String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
+		if(!connectPacket.getIsConnected()) return;
 
-		if(tokens[0].equalsIgnoreCase("join")) {
-			runJoin(args);
+		System.out.println("Connected to Server");
+
+		try {
+			sendPacket(new GetEntitiesClientPacket(clientUUID));
+		} catch(IOException ex) {
+			ex.printStackTrace();
 		}
-		else if(tokens[0].equalsIgnoreCase("leave")) {
-			runLeave(args);
+	}
+
+	private void handleDisconnect(DisconnectServerPacket disconnectPacket) {
+		
+		if(!disconnectPacket.getIsDisconnected()) return;
+
+		System.out.println("Disconnected from server");
+	}
+
+	private void handleCreateEntity(CreateEntityServerPacket createEntityPacket) {
+
+		// TODO implement enemy logic
+
+		if(createEntityPacket.getEntityType() == EntityType.PLAYER) {
+			this.ghostManager.createGhost(createEntityPacket.getEntityID(), createEntityPacket.getPosition());
 		}
-		else if(tokens[0].equalsIgnoreCase("create")) {
-			runCreate(args);
+		
+	}
+
+	private void handleUpdateEntity(UpdateEntityServerPacket updateEntityPacket) {
+
+		// TODO implement enemy logic
+
+		if(updateEntityPacket.getEntityType() == EntityType.PLAYER) {
+
+			UUID ghostID = updateEntityPacket.getEntityID();
+
+			this.ghostManager.updateGhostMove(ghostID, updateEntityPacket.getPosition());
+			this.ghostManager.updateGhostRotate(ghostID, updateEntityPacket.getRotation());
 		}
-		else if(tokens[0].equalsIgnoreCase("detail-request")) {
-			runDetailRequest(args);
+	}
+
+	private void handleDeleteEntity(DeleteEntityServerPacket deleteEntityPacket) {
+
+		if(deleteEntityPacket.getEntityType() == EntityType.PLAYER) {
+			this.ghostManager.removeGhost(deleteEntityPacket.getEntityID());
 		}
-		else if(tokens[0].equalsIgnoreCase("detail-for")) {
-			runDetailFor(args);
+		else if(deleteEntityPacket.getEntityType() == EntityType.ENEMY) {
+			this.enemyManager.removeEnemy(deleteEntityPacket.getEntityID());
 		}
-		else if(tokens[0].equalsIgnoreCase("move")) {
-			runMove(args);
+	}
+
+	private void handleGetEntities(GetEntitiesServerPacket getEntitiesPacket) {
+
+		// TODO implement enemy logic
+
+		EntityInfo[] entities = getEntitiesPacket.getEntities();
+
+		for(EntityInfo e : entities) {
+			if(e.type == EntityType.PLAYER) {
+				this.ghostManager.createGhost(e.id, e.position);
+			}
 		}
-		else if(tokens[0].equalsIgnoreCase("rotate")){
-			runRotate(args);
-		}
-		// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
-		else if(tokens[0].equalsIgnoreCase("enemy-create")) {
-			runEnemyCreate(args);
-		}
-		else if(tokens[0].equalsIgnoreCase("enemy-move")) {
-			runEnemyMove(args);
-		}
-		else if(tokens[0].equalsIgnoreCase("enemy-delete")) {
-			runEnemyDelete(args);
-		}
-		// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
-		else if(tokens[0].equalsIgnoreCase("createNPC")) {
-			runCreateNPC(args);
-		}
-		else if(tokens[0].equalsIgnoreCase("mnpc")) {
-			runMoveNPC(args);
-		}
+
+		this.isConnected = true;
 	}
 
 	public void joinServer()
 	{
 		try {
-			
-			sendPacket(String.join(";", "join", this.clientUUID.toString()));
-
+			sendPacket(new ConnectClientPacket(clientUUID, new Vector3f(0, 10, 0)));
 		} catch(IOException ex) {
 			System.err.println(ex.getMessage());
 		}
@@ -104,231 +149,27 @@ public class GameClient extends GameConnectionClient {
 	public void leaveServer()
 	{
 		try {
-
-			sendPacket(String.join(";", "leave", this.clientUUID.toString()));
-
+			sendPacket(new DisconnectClientPacket(clientUUID));
 		} catch(IOException ex) {
 			System.err.println(ex.getMessage());
 		}
 	}
 
-	public void sendMove(Vector3f position)
+	public void sendMove(Vector3f position, Quaternionf rotation)
 	{
 		try {
 
-			sendPacket(
-				String.join(";", 
-				"move", 
-				this.clientUUID.toString(),
-				String.valueOf(position.x),
-				String.valueOf(position.y),
-				String.valueOf(position.z)
+			sendPacket(new UpdateEntityClientPacket(
+				clientUUID, 
+				position, 
+				rotation, 
+				EntityType.PLAYER
 			));
 
 		} catch(IOException ex) {
 			System.err.println(ex.getMessage());
 		}
 	}
-
-	public void sendRotate(Quaternionf quat)
-	{
-
-		try {
-
-			sendPacket(
-				String.join(";", 
-				"rotate",
-				this.clientUUID.toString(),
-				String.valueOf(quat.x),
-				String.valueOf(quat.y),
-				String.valueOf(quat.z),
-				String.valueOf(quat.w)
-			));
-
-		} catch(IOException ex) {
-			System.err.println(ex.getMessage());
-		}
-	}
-	
-	private void runJoin(String[] args) 
-	{
-		if(!args[0].equalsIgnoreCase("true"))
-			return;
-
-		try {
-
-			Vector3f spawnLoc = new Vector3f(0, 0, 0);
-
-			String xS = String.valueOf(spawnLoc.x);
-			String yS = String.valueOf(spawnLoc.y);
-			String zS = String.valueOf(spawnLoc.z);
-
-			sendPacket(String.join(";", "spawn", clientUUID.toString(), xS, yS, zS));
-
-		} catch(IOException ex) {
-			System.err.println(ex.getMessage());
-		}
-	}
-
-	private void runLeave(String[] args)
-	{
-		UUID ghostID = UUID.fromString(args[0]);
-
-		ghostManager.removeGhost(ghostID);
-	}
-
-	// Runs upon another player joining
-	private void runCreate(String[] args)
-	{
-		UUID newGhostID = UUID.fromString(args[0]);
-
-		Vector3f spawnPosition = new Vector3f(
-			Float.parseFloat(args[1]),
-			Float.parseFloat(args[2]),
-			Float.parseFloat(args[3])
-		);
-
-		ghostManager.createGhost(newGhostID, spawnPosition);
-	}
-
-	private void runDetailRequest(String[] args)
-	{
-		Vector3f playerPos = game.getAvatar().getWorldLocation();
-
-		try {
-
-			sendPacket(String.join(
-				";", 
-				"detail-for", 
-				args[0], 
-				this.clientUUID.toString(),
-				String.valueOf(playerPos.x),
-				String.valueOf(playerPos.y),
-				String.valueOf(playerPos.z)
-			));
-
-		} catch(IOException ex) {
-			System.err.println(ex.getMessage());
-		}
-	}
-
-	// Runs upon this player joining and receiving other players' locations
-	private void runDetailFor(String[] args)
-	{
-		UUID newGhostID = UUID.fromString(args[0]);
-
-		Vector3f spawnPosition = new Vector3f(
-			Float.parseFloat(args[1]),
-			Float.parseFloat(args[2]),
-			Float.parseFloat(args[3])
-		);
-
-		ghostManager.createGhost(newGhostID, spawnPosition);
-	}
-
-	private void runMove(String[] args)
-	{
-		UUID ghostID = UUID.fromString(args[0]);
-
-		Vector3f nextPosition = new Vector3f(
-			Float.parseFloat(args[1]),
-			Float.parseFloat(args[2]),
-			Float.parseFloat(args[3])
-		);
-
-		ghostManager.updateGhostMove(ghostID, nextPosition);
-	}
-
-	private void runRotate(String[] args)
-	{
-		UUID ghostID = UUID.fromString(args[0]);
-
-		Quaternionf nextRotation = new Quaternionf(
-			Float.parseFloat(args[1]),
-			Float.parseFloat(args[2]),
-			Float.parseFloat(args[3]),
-			Float.parseFloat(args[4])
-		);
-
-		ghostManager.updateGhostRotate(ghostID, nextRotation);
-	}
-	
-	// ++++++++++++++++++++++++++++++++++ Enemy ++++++++++++++++++++++++++++++++++
-	
-	public void sendEnemyCreate(UUID enemyID, Vector3f position)
-	{
-		try {
-			sendPacket(String.join(";",
-				"enemy-create",
-				enemyID.toString(),
-				String.valueOf(position.x),
-				String.valueOf(position.y),
-				String.valueOf(position.z)
-			));
-		} catch(IOException ex) {
-			System.err.println(ex.getMessage());
-		}
-	}
-
-	public void sendEnemyMove(UUID enemyID, Vector3f position)
-	{
-		try {
-			sendPacket(String.join(";",
-				"enemy-move",
-				enemyID.toString(),
-				String.valueOf(position.x),
-				String.valueOf(position.y),
-				String.valueOf(position.z)
-			));
-		} catch(IOException ex) {
-			System.err.println(ex.getMessage());
-		}
-	}
-
-	public void sendEnemyDelete(UUID enemyID)
-	{
-		try {
-			sendPacket(String.join(";",
-				"enemy-delete",
-				enemyID.toString()
-			));
-		} catch(IOException ex) {
-			System.err.println(ex.getMessage());
-		}
-	}
-
-	private void runEnemyCreate(String[] args)
-	{
-		UUID enemyID = UUID.fromString(args[0]);
-
-		Vector3f spawnPosition = new Vector3f(
-			Float.parseFloat(args[1]),
-			Float.parseFloat(args[2]),
-			Float.parseFloat(args[3])
-		);
-
-		// enemyManager.createEnemy(enemyID, spawnPosition, 1.0f);
-	}
-
-	private void runEnemyMove(String[] args)
-	{
-		UUID enemyID = UUID.fromString(args[0]);
-
-		Vector3f nextPosition = new Vector3f(
-			Float.parseFloat(args[1]),
-			Float.parseFloat(args[2]),
-			Float.parseFloat(args[3])
-		);
-
-		// enemyManager.updateEnemy(enemyID, nextPosition, 1.0f, 0.0f);
-	}
-
-	private void runEnemyDelete(String[] args)
-	{
-		UUID enemyID = UUID.fromString(args[0]);
-		enemyManager.removeEnemy(enemyID);
-	}
-	
 
 	
 	// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++

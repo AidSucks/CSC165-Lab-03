@@ -307,9 +307,7 @@ public class MyGame extends VariableFrameRateGame
 
 		enemies.add(new LocalEnemy(enemyID, e));
 
-		if (gameClient != null) {
-			gameClient.sendEnemyCreate(enemyID, new Vector3f(x, y, z));
-		}
+	
 	}
 
 	@Override
@@ -318,13 +316,10 @@ public class MyGame extends VariableFrameRateGame
 		if(this.gameClient != null) {
 			this.gameClient.processPackets();
 
-			this.gameClient.sendMove(this.avatar.getPhysicsObject().getLocation());
-
 			Quaternionf rot = new Quaternionf();
-
 			this.avatar.getWorldRotation().getNormalizedRotation(rot);
 
-			this.gameClient.sendRotate(rot);
+			this.gameClient.sendMove(this.avatar.getPhysicsObject().getLocation(), rot);
 		}
 
 		// control xyz axes visibility

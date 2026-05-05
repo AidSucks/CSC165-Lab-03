@@ -1,5 +1,8 @@
 package myGame.server;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 import tage.ai.behaviortrees.*;
 
 public class NPCcontroller {
@@ -9,6 +12,8 @@ public class NPCcontroller {
 
     private long lastTickTime;
     private long lastThinkTime;
+
+	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 	
 	
     private BehaviorTree bt = new BehaviorTree(BTCompositeType.SELECTOR);
@@ -16,12 +21,10 @@ public class NPCcontroller {
     private boolean avatarNear = false;
 	private double avatarX, avatarY, avatarZ;
 
-
     public NPCcontroller(GameServer server) {
         this.server = server;
         this.npc = new NPC();
 		setupBehaviorTree();
-
     }
 
     public NPC getNPC() {
@@ -53,43 +56,36 @@ public class NPCcontroller {
 	}
 
     public void start() {
-        lastTickTime = System.nanoTime();
-        lastThinkTime = System.nanoTime();
+        lastTickTime = System.currentTimeMillis();
+        lastThinkTime = System.currentTimeMillis();
 
-        Thread npcThread = new Thread(() -> npcLoop());
-        npcThread.start();
-    }
+		scheduler.scheduleAtFixedRate(() -> {
 
-    private void npcLoop() {
-        while (true) {
-            long currentTime = System.nanoTime();
+			long currentTime = System.currentTimeMillis();
 
-            float elapsedTickMs =
-                (currentTime - lastTickTime) / 1_000_000.0f;
+			float elapsedTickMs = (currentTime - lastTickTime);
 
-            float elapsedThinkMs =
-                (currentTime - lastThinkTime) / 1_000_000.0f;
+			lastTickTime = currentTime;
 
-            // TICK: movement/update often
-            if (elapsedTickMs >= 25.0f) {
-                lastTickTime = currentTime;
+			npc.updateLocation();
+			server.sendNPCinfo();
 
-                npc.updateLocation();
-                server.sendNPCinfo();
-            }
+		}, 0, 25, java.util.concurrent.TimeUnit.MILLISECONDS);
 
-            // THINK: AI decision less often
-            if (elapsedThinkMs >= 250.0f) {
-                lastThinkTime = currentTime;
-				bt.update(elapsedThinkMs);
+        scheduler.scheduleAtFixedRate(() -> {
 
-                // reset after thinking
-                avatarNear = false;
+			long currentTime = System.currentTimeMillis();
 
-            }
+			float elapsedThinkMs = (currentTime - lastThinkTime);
 
-            Thread.yield();
-        }
+			lastThinkTime = currentTime;
+
+			bt.update(elapsedThinkMs);
+
+            // reset after thinking
+            avatarNear = false;
+
+		}, 0, 250, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 	
     private void setupBehaviorTree() {
