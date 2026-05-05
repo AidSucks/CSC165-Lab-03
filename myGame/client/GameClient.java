@@ -50,9 +50,17 @@ public class GameClient extends GameConnectionClient {
 
 		GameServerPacket packet = (GameServerPacket) object;
 
-		if(packet instanceof ConnectServerPacket connectPacket)
-			handleConnect(connectPacket);
-		else if(packet instanceof DisconnectServerPacket disconnectPacket) {
+		// Ignore other packets if connection isn't completely setup yet
+		if(!isConnected) {
+			if(packet instanceof ConnectServerPacket connectPacket)
+				handleConnect(connectPacket);
+			else if(packet instanceof GetEntitiesServerPacket getEntitiesPacket)
+				handleGetEntities(getEntitiesPacket);
+
+			return;
+		}
+
+		if(packet instanceof DisconnectServerPacket disconnectPacket) {
 			handleDisconnect(disconnectPacket);
 		}
 		else if(packet instanceof CreateEntityServerPacket createEntityPacket) {
@@ -64,9 +72,7 @@ public class GameClient extends GameConnectionClient {
 		else if(packet instanceof DeleteEntityServerPacket deleteEntityPacket) {
 			handleDeleteEntity(deleteEntityPacket);
 		}
-		else if(packet instanceof GetEntitiesServerPacket getEntitiesPacket) {
-			handleGetEntities(getEntitiesPacket);
-		}
+		
 	}
 
 	private void handleConnect(ConnectServerPacket connectPacket) {
@@ -127,6 +133,8 @@ public class GameClient extends GameConnectionClient {
 		// TODO implement enemy logic
 
 		EntityInfo[] entities = getEntitiesPacket.getEntities();
+
+		if(entities.length == 0) return;
 
 		for(EntityInfo e : entities) {
 			if(e.type == EntityType.PLAYER) {

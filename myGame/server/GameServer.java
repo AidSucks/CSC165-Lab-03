@@ -173,11 +173,15 @@ public class GameServer extends GameConnectionServer<UUID> {
 
 	private void handleGetEntities(GetEntitiesClientPacket getEntitiesPacket) {
 
-		EntityInfo[] entities = new EntityInfo[connectedPlayers.size() + activeEnemies.size()];
+		int entityCount = connectedPlayers.size() + activeEnemies.size() - 1;
+
+		EntityInfo[] entities = new EntityInfo[entityCount];
 
 		int index = 0;
 
 		for(Entry<UUID, ServerPlayer> entry : this.connectedPlayers.entrySet()) {
+
+			if(entry.getKey().compareTo(getEntitiesPacket.getClientIDFrom()) == 0) continue;
 			
 			EntityInfo entity = new EntityInfo();
 			entity.id = entry.getKey();
