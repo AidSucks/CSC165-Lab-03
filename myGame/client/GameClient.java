@@ -97,10 +97,16 @@ public class GameClient extends GameConnectionClient {
 
 	private void handleCreateEntity(CreateEntityServerPacket createEntityPacket) {
 
-		// TODO implement enemy logic
-
 		if(createEntityPacket.getEntityType() == EntityType.PLAYER) {
 			this.ghostManager.createGhost(createEntityPacket.getEntityID(), createEntityPacket.getPosition());
+		}
+		else if(createEntityPacket.getEntityType() == EntityType.ENEMY) {
+			this.enemyManager.createEnemy(
+				createEntityPacket.getEntityID(),
+				createEntityPacket.getPosition(),
+				0.25f,
+				"IDLE"
+			);
 		}
 		
 	}
@@ -113,8 +119,7 @@ public class GameClient extends GameConnectionClient {
 
 			UUID ghostID = updateEntityPacket.getEntityID();
 
-			this.ghostManager.updateGhostMove(ghostID, updateEntityPacket.getPosition());
-			this.ghostManager.updateGhostRotate(ghostID, updateEntityPacket.getRotation());
+			this.ghostManager.updateGhostMove(ghostID, updateEntityPacket.getPosition(), updateEntityPacket.getRotation());
 		}
 	}
 

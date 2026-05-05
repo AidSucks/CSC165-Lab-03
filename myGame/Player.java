@@ -14,7 +14,7 @@ public class Player extends GameObject
 {
 	private boolean physicsInitialized = false;
 
-	private boolean isOnGround = true;
+	private boolean isOnGround = false;
 
 	private UUID uuid;
 

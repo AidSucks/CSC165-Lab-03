@@ -11,7 +11,6 @@ public class GhostEnemy extends GameObject {
 
 	private AnimatedShape ghostEnemyS;
 	private String currentAnim = "";
-
 	
     public GhostEnemy(UUID id, AnimatedShape s, TextureImage t, Vector3f p) {
         super(GameObject.root(), s, t);

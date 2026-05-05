@@ -61,16 +61,12 @@ public class NPCcontroller {
 
 		scheduler.scheduleAtFixedRate(() -> {
 
-			long currentTime = System.currentTimeMillis();
-
-			float elapsedTickMs = (currentTime - lastTickTime);
-
-			lastTickTime = currentTime;
+			server.sendCreateEnemy();
 
 			npc.updateLocation();
 			server.sendNPCinfo();
 
-		}, 0, 25, java.util.concurrent.TimeUnit.MILLISECONDS);
+		}, 0, 5000, java.util.concurrent.TimeUnit.MILLISECONDS);
 
         scheduler.scheduleAtFixedRate(() -> {
 

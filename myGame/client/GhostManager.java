@@ -55,7 +55,7 @@ public class GhostManager {
 		return null;
 	}
 
-	public void updateGhostMove(UUID id, Vector3f newPosition)
+	public void updateGhostMove(UUID id, Vector3f newPosition, Quaternionf newRotation)
 	{
 		GhostAvatar affectedGhost = this.getAvatarByID(id);
 
@@ -65,17 +65,6 @@ public class GhostManager {
 		}
 
 		affectedGhost.setLocalLocation(newPosition);
-	}
-
-	public void updateGhostRotate(UUID id, Quaternionf newRotation)
-	{
-		GhostAvatar affectedGhost = this.getAvatarByID(id);
-
-		if(affectedGhost == null) {
-			System.err.println("Avatar not found: " + id.toString());
-			return;
-		}
-
 		affectedGhost.setLocalRotation(new Matrix4f().rotation(newRotation));
 	}
 }

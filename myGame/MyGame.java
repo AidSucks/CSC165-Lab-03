@@ -1,6 +1,11 @@
 package myGame;
 
 import tage. * ;
+import tage.audio.AudioResource;
+import tage.audio.AudioResourceType;
+import tage.audio.IAudioManager;
+import tage.audio.Sound;
+import tage.audio.SoundType;
 import tage.shapes. * ;
 import java.util.ArrayList;
 import java.util.UUID; 
@@ -22,6 +27,7 @@ public class MyGame extends VariableFrameRateGame
 {
 	private static Engine engine;
 	private PhysicsEngine physicsEngine;
+	private IAudioManager audioManager;
 
 	private InputManager im;
 	private GameClient gameClient;
@@ -38,6 +44,8 @@ public class MyGame extends VariableFrameRateGame
 	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
 
 	private PhysicsObject terrainMesh;
+
+	private Sound footstepSound;
 	
 	// object
 	private Player avatar;
@@ -107,6 +115,24 @@ public class MyGame extends VariableFrameRateGame
 		if(this.gameClient == null) return;
 
 		this.gameClient.joinServer();
+	}
+
+	@Override
+	public void loadSounds() {
+
+		AudioResource audioResource;
+
+		this.audioManager = engine.getAudioManager();
+
+
+		// https://opengameart.org/content/foot-walking-step-sounds-on-stone-water-snow-wood-and-dirt
+		audioResource = audioManager.createAudioResource("stepdirt_1.wav", AudioResourceType.AUDIO_SAMPLE);
+
+		footstepSound = new Sound(audioResource, SoundType.SOUND_EFFECT, 100, false);
+		footstepSound.initialize(audioManager);
+		footstepSound.setMaxDistance(10.0f);
+		footstepSound.setMinDistance(0.5f);
+		footstepSound.setRollOff(5.0f);
 	}
 
 	@Override
@@ -232,9 +258,11 @@ public class MyGame extends VariableFrameRateGame
 		
 		im = engine.getInputManager();
 		orbitCamera = new CameraOrbit3D(leftCamera, avatar);
+
+		footstepSound.setLocation(this.avatar.getWorldForwardVector());
 		
 		// ----------------- INPUTS SECTION -----------------------------
-		FwdAction fwdAction = new FwdAction(this);
+		FwdAction fwdAction = new FwdAction(this, footstepSound);
         TurnAction turnAction = new TurnAction(this);
 		OrbitAzimuthAction azmAction = new OrbitAzimuthAction(this, orbitCamera);
         OrbitElevationAction altAction = new OrbitElevationAction(this, orbitCamera);
@@ -333,16 +361,6 @@ public class MyGame extends VariableFrameRateGame
 		currFrameTime = System.currentTimeMillis();
 		float dt = (float) getDeltaTime();
 		elapsTime += dt;
-		
-		// // spawn enemies
-		// if (isEnemyHost && isGameStart) {
-			// spawnTimer += dt;
-			// if (spawnTimer >= spawnWait && enemies.size() < maxEnemies) {
-				// spawnEnemy();
-				// spawnTimer = 0.0f;
-				// System.out.println("enemiesSpawn:" + enemies.size());
-			// }
-		// }
 
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
@@ -391,6 +409,11 @@ public class MyGame extends VariableFrameRateGame
 
 		physicsEngine.update(dt);
 		physicsEngine.detectCollisions();
+
+		// Sounds
+		footstepSound.setLocation(this.avatar.getWorldLocation());
+		audioManager.getEar().setLocation(avatar.getWorldLocation());
+		audioManager.getEar().setOrientation(this.leftCamera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
 		
 		// // --------------- enemy walk to player 
 		// if (isEnemyHost) {

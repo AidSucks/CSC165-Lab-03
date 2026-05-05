@@ -46,7 +46,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 		super(localPort, ProtocolType.UDP);
 		
 		npcCtrl = new NPCcontroller(this);
-        //npcCtrl.start();
+        npcCtrl.start();
 	}
 
 
@@ -173,6 +173,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 
 	private void handleGetEntities(GetEntitiesClientPacket getEntitiesPacket) {
 
+		// Count every entity EXCEPt for the player who requested
 		int entityCount = connectedPlayers.size() + activeEnemies.size() - 1;
 
 		EntityInfo[] entities = new EntityInfo[entityCount];
@@ -209,6 +210,28 @@ public class GameServer extends GameConnectionServer<UUID> {
 
 		try {
 			sendPacket(new GetEntitiesServerPacket(entities), getEntitiesPacket.getClientIDFrom());
+		} catch(IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	public void sendCreateEnemy() {
+
+		UUID id = UUID.randomUUID();
+
+		ServerEnemy enemy = new ServerEnemy(new Vector3f(0, 1, 0), new Quaternionf());
+
+		this.activeEnemies.put(id, enemy);
+
+		try {
+
+			sendPacketToAll(new CreateEntityServerPacket(
+				id,
+				enemy.position,
+				enemy.rotation,
+				EntityType.ENEMY
+			));
+
 		} catch(IOException ex) {
 			ex.printStackTrace();
 		}
