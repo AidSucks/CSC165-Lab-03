@@ -38,6 +38,9 @@ public class MyGame extends VariableFrameRateGame
 	
 	private int counter=0;
 
+	private static int serverPort = 9999;
+	private static InetAddress serverAddress;
+
 	private static double lastFrameTime, currFrameTime;
 
 	private double elapsTime;
@@ -92,18 +95,32 @@ public class MyGame extends VariableFrameRateGame
 
 	public static void main(String[] args)
 	{	MyGame game = new MyGame();
+
+		if(args.length > 0) {
+
+			try {
+				serverAddress = InetAddress.getByName(args[0]);
+
+				serverPort = Integer.parseInt(args[1]);
+			} catch(NumberFormatException ex) {
+				System.err.println("Invalid server port format. Starting singleplayer");
+			} catch(IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+
 		engine = new Engine(game);
 		engine.initializeSystem();
 		game.buildGame();
 		game.startGame();
+
 	}
 
 	private void setupNetworking()
 	{
 		try {
 
-			// TODO change server address & port
-			this.gameClient = new GameClient(InetAddress.getByName("localhost"), 9999, this);
+			this.gameClient = new GameClient(InetAddress.getByName("localhost"), serverPort, this);
 
 		}catch(UnknownHostException ex) {
 			System.err.println(ex.getMessage());
