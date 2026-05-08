@@ -18,16 +18,16 @@ public class FwdAction extends AbstractInputAction {
     @Override
     public void performAction(float time, Event e) {
 
-		final float moveSpeed = 100f;
+		final float moveSpeed = 500f;
 
         // key forward
         if (e.getComponent().getName().equals("W")) {
-			player.moveAlongForward(moveSpeed);
+			player.moveAlongForward(time * moveSpeed);
         }
 
         // key backward
         if (e.getComponent().getName().equals("S")) {
-			player.moveAlongForward(-moveSpeed);
+			player.moveAlongForward(time * -moveSpeed);
         }
 
 		if(footstepSound.getIsPlaying() || !player.isOnGround()) return;

@@ -323,9 +323,12 @@ public class MyGame extends VariableFrameRateGame
 			100
 		);
 
-		terrainMesh.setFriction(0.5f);
-
+		terrainMesh.setFriction(1f);
+		terrainMesh.disableSleeping();
 		terr.setPhysicsObject(terrainMesh);
+		
+		// engine.enableGraphicsWorldRender(); 
+		engine.enablePhysicsWorldRender();
 	}
 	
 	
