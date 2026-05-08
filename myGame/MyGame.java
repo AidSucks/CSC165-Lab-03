@@ -46,7 +46,7 @@ public class MyGame extends VariableFrameRateGame
 	private double elapsTime;
 	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
 
-	private PhysicsObject terrainMesh;
+	private PhysicsObject terrainMesh, caps1P;
 
 	private Sound footstepSound;
 	
@@ -205,12 +205,13 @@ public class MyGame extends VariableFrameRateGame
 		
 		// build enemy
 		enemy = new GameObject(GameObject.root(), enemyS, enemyTex);
-		initialTranslation = (new Matrix4f()).translation(0f, 1f, 0.5f);
+		initialTranslation = (new Matrix4f()).translation(0f, 5f, 0.5f);
 		enemy.setLocalTranslation(initialTranslation);
 		initialScale = (new Matrix4f()).scaling(0.05f);
         enemy.setLocalScale(initialScale);
-		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f));
-        enemy.setLocalRotation(initialRotation);
+		// initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f));
+        // enemy.setLocalRotation(initialRotation);
+		enemy.getRenderStates().setModelOrientationCorrection( (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
 		enemyS.playAnimation("IDLE", 0.5f, AnimatedShape.EndType.LOOP, 0); 
 
 		
@@ -285,11 +286,13 @@ public class MyGame extends VariableFrameRateGame
         OrbitElevationAction altAction = new OrbitElevationAction(this, orbitCamera);
         OrbitRadiusAction zoomAction = new OrbitRadiusAction(this, orbitCamera);
 		JumpAction jumpAction = new JumpAction(this);
+		PushAction pushAction = new PushAction(this);
 		
 		// ----------------- Forward/Backward SECTION -----------------------------
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.W, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.S, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.SPACE, jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.F, pushAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		// ----------------- Turn SECTION -----------------------------
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.A, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
         im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -302,6 +305,8 @@ public class MyGame extends VariableFrameRateGame
 
 		this.setupNetworking();
 	}
+	
+
 
 	@Override
 	public void initializePhysicsObjects()
@@ -310,6 +315,22 @@ public class MyGame extends VariableFrameRateGame
 		
 		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
 		physicsEngine.setGravity(gravity);
+		
+		// --------------------enemy--------------------
+		float mass = 50.0f; 
+		float radius = 0.20f; 
+		float height = 0.2f; 
+		Vector3f loc; 
+		Quaternionf rot2; 
+		
+		loc = enemy.getWorldLocation();  
+		rot2 = new Quaternionf(); 
+		(enemy.getWorldRotation()).getNormalizedRotation(rot2); 
+		caps1P = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot2, 1, radius, height); 
+		caps1P.getRigidBody().setAngularFactor(new com.jme3.math.Vector3f(0, 0, 0));
+		caps1P.setDamping(0.5f,0.5f);
+		// caps1P.disableSleeping(); 
+		enemy.setPhysicsObject(caps1P);
 
 		// Initialize Physics objects for player
 		avatar.initializePhysics();
@@ -327,7 +348,9 @@ public class MyGame extends VariableFrameRateGame
 		terrainMesh.disableSleeping();
 		terr.setPhysicsObject(terrainMesh);
 		
-		// engine.enableGraphicsWorldRender(); 
+
+		
+		engine.enableGraphicsWorldRender(); 
 		engine.enablePhysicsWorldRender();
 	}
 	
@@ -587,6 +610,11 @@ public class MyGame extends VariableFrameRateGame
 	public Player getAvatar() {
         return avatar;
     }
+	
+	public GameObject getEnemy() {
+        return enemy;
+    }
+
 
 	public static Engine getEngine() {
 		return engine;
@@ -615,4 +643,6 @@ public class MyGame extends VariableFrameRateGame
 	public GameObject getTerrain() {
 		return terr;
 	}
+	
+	
 }

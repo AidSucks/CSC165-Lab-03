@@ -94,14 +94,14 @@ public class Player extends GameObject
 		forward.y = 0;
 
 		float[] oldVelocity = po.getLinearVelocity();
-		System.out.printf("oldVelocity amount %.2f,%.2f,%.2f: \n", oldVelocity[0], oldVelocity[1], oldVelocity[2]);
+		// System.out.printf("oldVelocity amount %.2f,%.2f,%.2f: \n", oldVelocity[0], oldVelocity[1], oldVelocity[2]);
 		
 		float[] velocity = {
 			forward.x() * speed,
 			oldVelocity[1],          // keep jump / gravity velocity
 			forward.z() * speed
 		};
-		System.out.printf("velocity amount %.2f,%.2f,%.2f: \n", velocity[0], velocity[1], velocity[2]);
+		// System.out.printf("velocity amount %.2f,%.2f,%.2f: \n", velocity[0], velocity[1], velocity[2]);
 
 		po.setLinearVelocity(velocity);
 	}
@@ -111,6 +111,32 @@ public class Player extends GameObject
 		PhysicsObject po = getPhysicsObject();
 
 		po.applyImpulse(0, impulseStrength, 0, 0, 0, 0);
+	}
+	
+	public void push(GameObject target, float force)
+	{
+		if (target == null || target.getPhysicsObject() == null) return;
+		PhysicsObject playerPO = this.getPhysicsObject();
+		PhysicsObject targetPO = target.getPhysicsObject();
+		
+		boolean touching = playerPO.getFullCollidedSet().contains(targetPO);
+		if (!touching){
+			System.out.println("no collision to target");
+			return;
+		}
+		
+		Vector3f playerPos = this.getWorldLocation();
+		// System.out.printf("playerPos amount %.2f,%.2f,%.2f: \n", playerPos.x(), playerPos.y(), playerPos.z());
+		
+		Vector3f targetPos = target.getWorldLocation();
+		// System.out.printf("targetPos amount %.2f,%.2f,%.2f: \n", targetPos.x(), targetPos.y(), targetPos.z());
+		
+		Vector3f pushDir = new Vector3f(targetPos).sub(playerPos);
+
+		// System.out.printf("pushDir amount %.2f,%.2f,%.2f: \n", pushDir.x(), pushDir.y(), pushDir.z());
+		targetPO.applyImpulse(pushDir.x() * force, 0.5f, pushDir.z() * force, 0, 0, 0);
+		// System.out.printf("pushDir amount %.2f,%.2f,%.2f: \n", pushDir.x(), pushDir.y(), pushDir.z());
+
 	}
 
 }
