@@ -27,19 +27,30 @@ public class OrbitAzimuthAction extends AbstractInputAction {
         // System.out.println("Value = " + event.getValue());
         // System.out.println("time is = " + time);
 
-        float rotAmount;
+        float rotAmount = 0.0f;
 
         if (event.getValue() < -0.2 && event.getValue() > -0.99) {
-            rotAmount = -0.05f;
+            rotAmount = -5f;
         } else {
             if (event.getValue() > 0.2) {
-                rotAmount = 0.05f;
+                rotAmount = 5f;
             } else {
                 rotAmount = 0.0f;
 
             }
         }
+		
+		// key action
+        if (event.getComponent().getName().equals("C")) {
+            // System.out.println("OBJ pressed C");
+            rotAmount = -5f;
+        }
 
-        orbitCamera.orbitAzimuth(rotAmount);
+        if (event.getComponent().getName().equals("V")) {
+            // System.out.println("OBJ pressed V");
+            rotAmount = 5f;
+        }
+
+        orbitCamera.orbitAzimuth(time * rotAmount);
     }
 }

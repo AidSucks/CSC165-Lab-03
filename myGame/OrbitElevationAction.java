@@ -30,16 +30,27 @@ public class OrbitElevationAction extends AbstractInputAction {
         float rotAmount;
 
         if (event.getValue() < -0.2 && event.getValue() > -0.99) {
-            rotAmount = -0.05f;
+            rotAmount = -5f;
         } else {
             if (event.getValue() > 0.2) {
-                rotAmount = 0.05f;
+                rotAmount = 5f;
             } else {
                 rotAmount = 0.0f;
 
             }
         }
+		
+		// key action
+        if (event.getComponent().getName().equals("G")) {
+            // System.out.println("OBJ pressed G");
+            rotAmount = -5f;
+        }
 
-        orbitCamera.orbitElevation(rotAmount);
+        if (event.getComponent().getName().equals("B")) {
+            // System.out.println("OBJ pressed B");
+            rotAmount = 5f;
+        }
+
+        orbitCamera.orbitElevation(time * rotAmount);
     }
 }
