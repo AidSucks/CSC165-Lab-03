@@ -19,6 +19,20 @@ public class FwdAction extends AbstractInputAction {
     public void performAction(float time, Event e) {
 
 		final float moveSpeed = 500f;
+		float keyValue = e.getValue();
+		
+		if (keyValue >  - .3 && keyValue < .3) {
+			return; // deadzone
+		}
+		
+		// gamepad  backward
+		if (keyValue >  - .3) {
+			player.moveAlongForward(time * -moveSpeed);
+		}
+                // gamepad  forward
+		if (keyValue < .3) {
+			player.moveAlongForward(time * moveSpeed);
+		}
 
         // key forward
         if (e.getComponent().getName().equals("W")) {

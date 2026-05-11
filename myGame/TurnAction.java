@@ -40,16 +40,7 @@ public class TurnAction extends AbstractInputAction {
             av.yaw(-turnSpeed * time);
         }
 
-        // key pitch action
-        if (e.getComponent().getName().equals("Up")) {
-            // System.out.println("OBJ pressed Up");
-            av.pitch(-turnSpeed * time);
-        }
 
-        if (e.getComponent().getName().equals("Down")) {
-            // System.out.println("OBJ pressed Down");
-            av.pitch(turnSpeed * time);
-        }
 
     }
 }

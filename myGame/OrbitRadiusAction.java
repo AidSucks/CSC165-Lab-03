@@ -34,16 +34,27 @@ public class OrbitRadiusAction extends AbstractInputAction {
         float zoomAmount;
 
         if (event.getValue() < -0.2 && event.getValue() > -0.99) {
-            zoomAmount = -0.05f;
+            zoomAmount = -5f;
         } else {
             if (event.getValue() > 0.2) {
-                zoomAmount = 0.05f;
+                zoomAmount = 5f;
             } else {
                 zoomAmount = 0.0f;
 
             }
         }
+		
+		// key action
+        if (event.getComponent().getName().equals("Z")) {
+            // System.out.println("OBJ pressed Z");
+            zoomAmount = -5f;
+        }
 
-        orbitCamera.orbitRadius(zoomAmount);
+        if (event.getComponent().getName().equals("X")) {
+            // System.out.println("OBJ pressed X");
+            zoomAmount = 5f;
+        }
+
+        orbitCamera.orbitRadius(time * zoomAmount);
     }
 }

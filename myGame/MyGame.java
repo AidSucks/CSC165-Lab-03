@@ -38,6 +38,7 @@ public class MyGame extends VariableFrameRateGame
 	private boolean isLightOn=false;
 	private boolean hasKey=false;
 	private boolean spaceshipActivated = false;
+	private boolean isBeepPlay = true;
 	
 	private int counter=0;
 
@@ -47,13 +48,17 @@ public class MyGame extends VariableFrameRateGame
 	private static double lastFrameTime, currFrameTime;
 
 	private double elapsTime;
+	
+	private float beepTimer = 0.0f;
+	private float beepInterval = 2.0f;
+	
 	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
 
 	private PhysicsObject terrainMesh, caps1P;
 
-	private Sound footstepSound;
+	private Sound footstepSound, beepSound;
 	
-    private String message = "Escape this planet, Find the KEY, Find the spaceship";
+    private String message = "Escape this planet, Find the KEY, Find the spaceship, R/B3 - flashlight, F/B2 - Push, Spacebar/B1 - jump, E/B0 - Take";
     private String infor = "";
 	
 
@@ -145,19 +150,27 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadSounds() {
 
-		AudioResource audioResource;
+		AudioResource audioResource, audioResourceBeep;
 
 		this.audioManager = engine.getAudioManager();
 
 
 		// https://opengameart.org/content/foot-walking-step-sounds-on-stone-water-snow-wood-and-dirt
 		audioResource = audioManager.createAudioResource("stepdirt_1.wav", AudioResourceType.AUDIO_SAMPLE);
+		// https://opengameart.org/content/3-ping-pong-sounds-8-bit-style
+		audioResourceBeep = audioManager.createAudioResource("beep.wav", AudioResourceType.AUDIO_SAMPLE);
 
 		footstepSound = new Sound(audioResource, SoundType.SOUND_EFFECT, 100, false);
 		footstepSound.initialize(audioManager);
 		footstepSound.setMaxDistance(10.0f);
 		footstepSound.setMinDistance(0.5f);
 		footstepSound.setRollOff(5.0f);
+		
+		beepSound = new Sound(audioResourceBeep, SoundType.SOUND_EFFECT, 100, false);
+		beepSound.initialize(audioManager);
+		beepSound.setMaxDistance(30.0f);
+		beepSound.setMinDistance(5f);
+		beepSound.setRollOff(5.0f);
 	}
 
 	@Override
@@ -352,7 +365,10 @@ public class MyGame extends VariableFrameRateGame
 		im = engine.getInputManager();
 		orbitCamera = new CameraOrbit3D(leftCamera, avatar);
 
+		// Sound
 		footstepSound.setLocation(this.avatar.getWorldForwardVector());
+		beepSound.setLocation(spaceship.getWorldLocation());
+		// beepSound.play();
 		
 		// ----------------- INPUTS SECTION -----------------------------
 		FwdAction fwdAction = new FwdAction(this, footstepSound);
@@ -362,22 +378,44 @@ public class MyGame extends VariableFrameRateGame
         OrbitRadiusAction zoomAction = new OrbitRadiusAction(this, orbitCamera);
 		JumpAction jumpAction = new JumpAction(this);
 		PushAction pushAction = new PushAction(this);
+		AxisTurnAction axisTurnAction = new AxisTurnAction(this);
+		TakeKeyAction takeKeyAction = new TakeKeyAction(this);
+		LightAction lightAction = new LightAction(this);
 		
 		// ----------------- Forward/Backward SECTION -----------------------------
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.W, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.S, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.SPACE, jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.F, pushAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.Y, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		// ----------------- Turn SECTION -----------------------------
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.A, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
         im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.UP, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.DOWN, turnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.X, axisTurnAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+
+		
 		// ----------------- CameraOrbit3D SECTION -----------------------------
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RX, azmAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.RY, altAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.Z, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-
+		
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.G, altAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.B, altAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.C, azmAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.V, azmAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.Z, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+        im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.X, zoomAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		
+		// ----------------- SECTION -----------------------------
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.E, takeKeyAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.R, lightAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._0, takeKeyAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._1, jumpAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._2, pushAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._3, lightAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		
 		this.setupNetworking();
 	}
 	
@@ -547,6 +585,8 @@ public class MyGame extends VariableFrameRateGame
 		footstepSound.setLocation(this.avatar.getWorldLocation());
 		audioManager.getEar().setLocation(avatar.getWorldLocation());
 		audioManager.getEar().setOrientation(this.leftCamera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
+		updateBeepSound(dt);
+
 		
 		// // --------------- enemy walk to player 
 		// if (isEnemyHost) {
@@ -639,22 +679,6 @@ public class MyGame extends VariableFrameRateGame
 			case KeyEvent.VK_1:
 				paused = !paused;
 				break;
-			case KeyEvent.VK_R:
-				isLightOn = !isLightOn;
-				lightVisible();
-				break;
-			case KeyEvent.VK_E:
-				if (checkDistance(avatar, key, 2.0f)) {
-					// System.out.println("taken key");
-					infor = "key taken";
-					takeKey(keyTex);
-					hasKey = true;
-					key.getRenderStates().disableRendering();
-					light4.disable();
-				}else{
-					infor = "not close enough getting key";
-				}
-				break;
 			case KeyEvent.VK_2:
 				avatar.getRenderStates().setWireframe(true);
 				break;
@@ -690,8 +714,8 @@ public class MyGame extends VariableFrameRateGame
 				enemyS.stopAnimation(); 
 				break; 
 			// show axes
-			case KeyEvent.VK_V:
-				System.out.println("pressed v");
+			case KeyEvent.VK_M:
+				System.out.println("pressed M");
 				isxyzAxesVisible = !isxyzAxesVisible;
 				xyzAxesVisible();
 				System.out.println("isxyzAxesVisible is " + isxyzAxesVisible);
@@ -720,6 +744,11 @@ public class MyGame extends VariableFrameRateGame
             light2.disable();
         }
     }
+	
+	public void lightToggle(){
+		isLightOn = !isLightOn;
+		lightVisible();
+	}
 	
 	private void updateLight(){
 		if (light2 == null || avatar == null) return;
@@ -768,6 +797,26 @@ public class MyGame extends VariableFrameRateGame
 		rightCamera.setLocation(overheadView);
 	}
 	
+	private void updateBeepSound(float dt){
+		if (beepSound == null || spaceship == null) return;
+
+		beepTimer += dt;
+		
+		if (beepTimer >= beepInterval){
+			beepSound.setLocation(spaceship.getWorldLocation());
+			audioManager.getEar().setLocation(avatar.getWorldLocation());
+			audioManager.getEar().setOrientation(this.leftCamera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
+			if(isBeepPlay) {
+				beepSound.play();
+			}else{
+				beepSound.stop();
+			}
+			
+
+			beepTimer = 0.0f;
+		}
+	}
+	
 	public boolean checkDistance(GameObject objA, GameObject objB, float amount) {
         Vector3f locA, locB;
 
@@ -782,6 +831,18 @@ public class MyGame extends VariableFrameRateGame
             return false;
         }
     }
+	
+	public void tryTakeKey(){
+		if (checkDistance(avatar, key, 2.0f)) {
+			infor = "key taken";
+			takeKey(keyTex);
+			hasKey = true;
+			key.getRenderStates().disableRendering();
+			light4.disable();
+		} else {
+			infor = "not close enough getting key";
+		}
+	}
 	
 	private void takeKey(TextureImage ojbTex) {
         Matrix4f initialTranslation, initialScale, initialRotation;
@@ -810,8 +871,8 @@ public class MyGame extends VariableFrameRateGame
         initialRotation;
 		
 		boolean  closeSpaceship = checkDistance(avatar, spaceship, 3.0f);
-		System.out.println("hasKey: " + hasKey);
-		System.out.println("closeSpaceship: " + closeSpaceship);
+		// System.out.println("hasKey: " + hasKey);
+		// System.out.println("closeSpaceship: " + closeSpaceship);
 
 		if (!hasKey && closeSpaceship){
 			infor = "You do not have a key to activate spaceship!";
@@ -846,14 +907,14 @@ public class MyGame extends VariableFrameRateGame
 			avatar.setLocalRotation(new Matrix4f());
 			avatar.getPhysicsObject().setLinearVelocity(new float[]{0f, 0f, 0f});
 			spaceshipActivated = true;
-			
+			isBeepPlay = false;
 		}	
 		
 		if(spaceshipActivated){
 			float maxY = 10.0f;
 			float dt = (float)getDeltaTime();
 			float speed = 2.0f;
-
+			
 			Vector3f pos = spaceship.getWorldLocation();
 			if (pos.y() < maxY){
 				spaceship.setLocalLocation(new Vector3f(
@@ -861,6 +922,8 @@ public class MyGame extends VariableFrameRateGame
 				pos.y() + speed * dt,
 				pos.z()
 			));
+			}else{
+				infor = "You Escaped";
 			}
 			
 		}
