@@ -330,6 +330,7 @@ public class MyGame extends VariableFrameRateGame
 	
 	
 	private void spawnEnemy() {
+		
 		GameObject e = new GameObject(GameObject.root(), enemyS, enemyTex);
 
 		// get player position
@@ -415,6 +416,7 @@ public class MyGame extends VariableFrameRateGame
 			
 			go.setLocalLocation(new Vector3f(po.getLocation()).lerp(go.getLocalLocation(), 0.25f));
 
+			// Check is on ground
 			if(go instanceof Player) {
 
 				float yVel = po.getLinearVelocity()[1];

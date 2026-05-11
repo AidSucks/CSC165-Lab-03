@@ -217,19 +217,66 @@ public class GameServer extends GameConnectionServer<UUID> {
 
 	public void sendCreateEnemy() {
 
-		UUID id = UUID.randomUUID();
+		NPC npc = npcCtrl.getNPC();
 
-		ServerEnemy enemy = new ServerEnemy(new Vector3f(0, 1, 0), new Quaternionf());
+		Vector3f initialPostion = new Vector3f(
+			(float) npc.getX(), 
+			(float) npc.getY(), 
+			(float) npc.getZ()
+		);
 
-		this.activeEnemies.put(id, enemy);
+		Quaternionf initialRotation = new Quaternionf();
+		initialRotation.setAngleAxis(npc.getYaw(), 0, 1, 0);
+
+		ServerEnemy enemy = new ServerEnemy(initialPostion, initialRotation);
+
+		this.activeEnemies.put(npc.getID(), enemy);
 
 		try {
 
-			sendPacketToAll(new CreateEntityServerPacket(
-				id,
+			sendPacketToAll(new CreateNPCEntityServerPacket(
+				npc.getID(),
 				enemy.position,
 				enemy.rotation,
-				EntityType.ENEMY
+				EntityType.ENEMY,
+				npc.getState(),
+				npc.getSize()
+			));
+
+		} catch(IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	public void sendUpdateEnemy() {
+
+		NPC npc = npcCtrl.getNPC();
+
+		Vector3f position = new Vector3f(
+			(float) npc.getX(), 
+			(float) npc.getY(), 
+			(float) npc.getZ()
+		);
+
+		Quaternionf rotation = new Quaternionf();
+		rotation.setAngleAxis(npc.getYaw(), 0, 1, 0);
+
+		ServerEnemy enemy = this.activeEnemies.get(npc.getID());
+
+		if(enemy == null) return;
+
+		enemy.position = position;
+		enemy.rotation = rotation;
+
+		try {
+
+			sendPacketToAll(new UpdateNPCEntityServerPacket(
+				npc.getID(),
+				enemy.position,
+				enemy.rotation,
+				EntityType.ENEMY,
+				npc.getState(),
+				npc.getSize()
 			));
 
 		} catch(IOException ex) {

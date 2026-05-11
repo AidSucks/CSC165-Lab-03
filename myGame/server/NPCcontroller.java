@@ -44,29 +44,29 @@ public class NPCcontroller {
 	}
 	
 	public void spawnNPCAround(double avatarX, double avatarY, double avatarZ) {
-		double angle = Math.random() * Math.PI * 2.0;
-		double distance = 5.0 + Math.random() * 10.0;
-
-		double x = avatarX + Math.cos(angle) * distance;
-		double z = avatarZ + Math.sin(angle) * distance;
-
-		npc.setLocation(x, 0, z);
-
-		server.sendNPCstartToAll();
+		
 	}
 
     public void start() {
         lastTickTime = System.currentTimeMillis();
         lastThinkTime = System.currentTimeMillis();
 
-		scheduler.scheduleAtFixedRate(() -> {
+		scheduler.schedule(() -> {
+
+			npc.setLocation(0, 0, 0);
 
 			server.sendCreateEnemy();
 
-			npc.updateLocation();
-			server.sendNPCinfo();
+			System.out.println("Spawned enemy");
 
-		}, 0, 5000, java.util.concurrent.TimeUnit.MILLISECONDS);
+		}, 30, java.util.concurrent.TimeUnit.SECONDS);
+
+		scheduler.scheduleAtFixedRate(() -> {
+
+			npc.updateLocation();
+			server.sendUpdateEnemy();
+
+		}, 0, 25, java.util.concurrent.TimeUnit.MILLISECONDS);
 
         scheduler.scheduleAtFixedRate(() -> {
 

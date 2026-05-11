@@ -14,22 +14,23 @@ public class EnemyManager {
 		this.game = game;
 	}
 
-    public void createEnemy(UUID id, Vector3f p, float size, String state) {
+    public void createEnemy(UUID id, Vector3f p, float size, String state, Quaternionf rot) {
         if (findEnemy(id) != null) return;
 
         GhostEnemy e = new GhostEnemy(id, game.getEnemyAnimatedShape(), game.getEnemyTexture(), p);
+		e.setLocalRotation(new Matrix4f().rotation(rot));
         e.setSize(size);
         // e.setLocalRotation(new Matrix4f().rotationY((float)Math.toRadians(180.0f)));
 		e.playAnimation("IDLE");
         enemies.add(e);
     }
 
-    public void updateEnemy(UUID id, Vector3f p, float size, float yawAmt, String state) {
+    public void updateEnemy(UUID id, Vector3f p, float size, String state, Quaternionf rot) {
         GhostEnemy e = findEnemy(id);
         if (e != null) {
             e.setLocalLocation(p);
 			e.setSize(size);
-			e.setYaw(yawAmt);
+			e.setLocalRotation(new Matrix4f().rotation(rot));;
 			e.playAnimation(state);
         }
     }

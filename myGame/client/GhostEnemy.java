@@ -29,10 +29,6 @@ public class GhostEnemy extends GameObject {
 		setLocalScale(new Matrix4f().scaling(size));
 	}
 	
-	public void setYaw(float yawAmt) {
-		setLocalRotation(new Matrix4f().rotationY(yawAmt));
-	}
-	
 	public void playAnimation(String animName) {
 		// System.out.println("game client playAnimation: " + currentAnim);
         if (animName.equals(currentAnim)) {

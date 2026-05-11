@@ -2,7 +2,6 @@ package myGame.client;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.UUID;
 
 import org.joml.*;
@@ -60,6 +59,12 @@ public class GameClient extends GameConnectionClient {
 			return;
 		}
 
+		else if(packet instanceof CreateNPCEntityServerPacket createNPCPacket) {
+			handleCreateNPC(createNPCPacket);
+		}
+		else if(packet instanceof UpdateNPCEntityServerPacket updateNPCPacket) {
+			handleUpdateNPC(updateNPCPacket);
+		}
 		if(packet instanceof DisconnectServerPacket disconnectPacket) {
 			handleDisconnect(disconnectPacket);
 		}
@@ -100,14 +105,6 @@ public class GameClient extends GameConnectionClient {
 		if(createEntityPacket.getEntityType() == EntityType.PLAYER) {
 			this.ghostManager.createGhost(createEntityPacket.getEntityID(), createEntityPacket.getPosition());
 		}
-		else if(createEntityPacket.getEntityType() == EntityType.ENEMY) {
-			this.enemyManager.createEnemy(
-				createEntityPacket.getEntityID(),
-				createEntityPacket.getPosition(),
-				0.25f,
-				"IDLE"
-			);
-		}
 		
 	}
 
@@ -135,6 +132,8 @@ public class GameClient extends GameConnectionClient {
 
 	private void handleGetEntities(GetEntitiesServerPacket getEntitiesPacket) {
 
+		this.isConnected = true;
+
 		// TODO implement enemy logic
 
 		EntityInfo[] entities = getEntitiesPacket.getEntities();
@@ -146,8 +145,28 @@ public class GameClient extends GameConnectionClient {
 				this.ghostManager.createGhost(e.id, e.position);
 			}
 		}
+	}
 
-		this.isConnected = true;
+	private void handleCreateNPC(CreateNPCEntityServerPacket createNPCPacket) {
+
+		enemyManager.createEnemy(
+			createNPCPacket.getEntityID(),
+			createNPCPacket.getPosition(),
+			(float) createNPCPacket.getSize(),
+			createNPCPacket.getState(),
+			createNPCPacket.getRotation()
+		);
+	}
+
+	private void handleUpdateNPC(UpdateNPCEntityServerPacket updateNPCPacket) {
+
+		enemyManager.updateEnemy(
+			updateNPCPacket.getEntityID(),
+			updateNPCPacket.getPosition(),
+			(float) updateNPCPacket.getSize(),
+			updateNPCPacket.getState(),
+			updateNPCPacket.getRotation()
+		);
 	}
 
 	public void joinServer()
@@ -213,7 +232,6 @@ public class GameClient extends GameConnectionClient {
 
 		Vector3f npcPos = new Vector3f(x, y, z);
 
-		enemyManager.createEnemy(npcID, npcPos, size, state);
 		checkAvatarNearNPC(npcPos);
 		
 		System.out.println("game client runCreateNPC");
@@ -231,7 +249,6 @@ public class GameClient extends GameConnectionClient {
 
 		Vector3f npcPos = new Vector3f(x, y, z);
 		
-		enemyManager.updateEnemy(npcID, npcPos, size, yaw, state);
 		checkAvatarNearNPC(npcPos);
 		
 		// System.out.println("game client runMoveNPC");
