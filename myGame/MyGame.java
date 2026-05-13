@@ -139,7 +139,7 @@ public class MyGame extends VariableFrameRateGame
 	{
 		try {
 
-			this.gameClient = new GameClient(InetAddress.getByName("localhost"), serverPort, this);
+			this.gameClient = new GameClient(serverAddress, serverPort, this);
 
 		}catch(UnknownHostException ex) {
 			System.err.println(ex.getMessage());
