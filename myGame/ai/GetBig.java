@@ -1,18 +1,19 @@
-package myGame.server;
+package myGame.ai;
 
 import tage.ai.behaviortrees.BTAction;
 import tage.ai.behaviortrees.BTStatus;
 
-public class StopChasing extends BTAction {
+public class GetBig extends BTAction {
     private NPC npc;
 
-    public StopChasing(NPC npc) {
+    public GetBig(NPC npc) {
         this.npc = npc;
     }
 
     @Override
     protected BTStatus update(float elapsedTime) {
-        npc.setChasing(false);
+		// System.out.println("NPC GET BIG");
+        npc.getBig();
         return BTStatus.BH_SUCCESS;
     }
 }

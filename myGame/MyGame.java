@@ -18,8 +18,8 @@ import java.io.IOException;
 
 import org.joml. * ;
 
-import myGame.client.GameClient;
 import myGame.networking.EntityType;
+import myGame.networking.client.GameClient;
 import tage.input. * ;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
@@ -42,6 +42,8 @@ public class MyGame extends VariableFrameRateGame
 	private boolean isBeepPlay = true;
 	
 	private int counter=0;
+
+	private float enemySpawnTimer = 0;
 
 	private static int serverPort = 9999;
 	private static InetAddress serverAddress;
@@ -495,6 +497,15 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void update()
 	{	
+		lastFrameTime = currFrameTime;
+		currFrameTime = System.currentTimeMillis();
+		float dt = (float) getDeltaTime();
+		elapsTime += dt;
+
+		int elapsTimeSec = Math.round((float)elapsTime);
+
+		this.enemySpawnTimer += dt;
+
 		if(this.gameClient != null) {
 			this.gameClient.processPackets();
 
@@ -505,23 +516,19 @@ public class MyGame extends VariableFrameRateGame
 
 			if(this.gameClient.getIsHost()) {
 				
+				if(enemySpawnTimer > 10f) {
+					enemySpawnTimer = 0;
+					this.gameClient.sendCreateEnemy(
+						UUID.randomUUID(),
+						new Vector3f(0, terr.getHeight(0, 0), 0),
+						new Quaternionf(), 
+						"IDLE",
+						0.05f
+					);
+				}
+
 			}
 		}
-		
-		// game time
-		// Update delta time
-		lastFrameTime = currFrameTime;
-		currFrameTime = System.currentTimeMillis();
-		float dt = (float) getDeltaTime();
-		elapsTime += dt;
-
-		// build and set HUD
-		int elapsTimeSec = Math.round((float)elapsTime);
-		String elapsTimeStr = Integer.toString(elapsTimeSec);
-		String counterStr = Integer.toString(counter);
-		
-		// String disStr0 = "score: %s Message: %s";
-        // String dispStr1 = String.format(disStr0, score, infor);
 		
 		String dispStr1 = "Message: " + message;
 		String dispStr2 = "Information: " + infor;

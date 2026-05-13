@@ -1,4 +1,4 @@
-package myGame.server;
+package myGame.ai;
 
 import java.util.UUID;
 
@@ -30,6 +30,7 @@ public class NPC {
     public double getSize() { return size; }
 	public double getYaw() { return yawAmt; }
 	public String getState() {return state;}
+
 	public void getBig() {
         size = 3.0;
     }

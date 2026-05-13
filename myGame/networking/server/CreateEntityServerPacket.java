@@ -1,9 +1,8 @@
-package myGame.networking;
+package myGame.networking.server;
 
 import org.joml.Vector3f;
-
+import myGame.networking.EntityType;
 import java.util.UUID;
-
 import org.joml.Quaternionf;
 
 

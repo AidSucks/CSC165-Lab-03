@@ -1,4 +1,4 @@
-package myGame.server;
+package myGame.ai;
 
 import tage.ai.behaviortrees.BTAction;
 import tage.ai.behaviortrees.BTStatus;

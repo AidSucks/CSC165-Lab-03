@@ -1,4 +1,4 @@
-package myGame.client;
+package myGame.networking.client;
 
 import java.util.ArrayList;
 import java.util.UUID;

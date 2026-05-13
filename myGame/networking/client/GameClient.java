@@ -1,4 +1,4 @@
-package myGame.client;
+package myGame.networking.client;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -7,8 +7,9 @@ import java.util.UUID;
 import org.joml.*;
 
 import myGame.MyGame;
+import myGame.ai.NPCcontroller;
 import myGame.networking.*;
-import myGame.server.NPCcontroller;
+import myGame.networking.server.*;
 import tage.networking.client.GameConnectionClient;
 
 public class GameClient extends GameConnectionClient {
@@ -20,6 +21,7 @@ public class GameClient extends GameConnectionClient {
 	private NPCcontroller npcController;
 
 	private boolean isConnected = false;
+	private boolean checkIsNear = false;
 
 	private boolean isHost = false;
 
@@ -75,7 +77,15 @@ public class GameClient extends GameConnectionClient {
 		else if(packet instanceof DeleteEntityServerPacket deleteEntityPacket) {
 			handleDeleteEntity(deleteEntityPacket);
 		}
-		
+		else if(packet instanceof GetEntitiesServerPacket getEntitiesPacket) {
+
+			if(this.isHost && this.checkIsNear) {
+				handleCheckIsNear(getEntitiesPacket);
+			} else {
+				handleGetEntities(getEntitiesPacket);
+			}
+
+		}	
 	}
 
 	private void handleConnect(ConnectServerPacket connectPacket) {
@@ -177,6 +187,11 @@ public class GameClient extends GameConnectionClient {
 		}
 	}
 
+	private void handleCheckIsNear(GetEntitiesServerPacket getEntitiesPacket)
+	{
+		this.checkIsNear = false;
+	}
+
 	private void setupHost() {
 
 		this.npcController = new NPCcontroller(this);
@@ -255,6 +270,42 @@ public class GameClient extends GameConnectionClient {
 		} catch(IOException ex) {
 			System.err.println(ex.getMessage());
 		}
+
+		this.enemyManager.createEnemy(
+			id, 
+			initialPosition, 
+			entityScale, 
+			initialAnimation, 
+			initialRotation
+		);
+	}
+
+	public void sendDeleteEnemy(
+		UUID id,
+		EntityType type
+	) {
+		try {
+
+			sendPacket(new DeleteEntityClientPacket(
+				clientUUID,
+				id, 
+				type
+			));
+
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public void checkIsNear() {
+
+		try {
+			sendPacket(new GetEntitiesClientPacket(clientUUID));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+
+		this.checkIsNear = true;
 	}
 
 	public boolean getIsHost() { return this.isHost; }

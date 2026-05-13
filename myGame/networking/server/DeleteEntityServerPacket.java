@@ -1,6 +1,7 @@
-package myGame.networking;
+package myGame.networking.server;
 
 import java.util.UUID;
+import myGame.networking.EntityType;
 
 public class DeleteEntityServerPacket extends GameServerPacket {
 	

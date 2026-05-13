@@ -1,6 +1,8 @@
-package myGame.networking;
+package myGame.networking.client;
 
 import java.util.UUID;
+
+import myGame.networking.EntityType;
 
 public class DeleteEntityClientPacket extends GameClientPacket {
 

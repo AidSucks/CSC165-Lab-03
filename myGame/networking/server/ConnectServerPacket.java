@@ -1,4 +1,4 @@
-package myGame.networking;
+package myGame.networking.server;
 
 public class ConnectServerPacket extends GameServerPacket {
 	

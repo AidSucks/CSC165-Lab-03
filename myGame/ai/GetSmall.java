@@ -1,19 +1,18 @@
-package myGame.server;
+package myGame.ai;
 
 import tage.ai.behaviortrees.BTAction;
 import tage.ai.behaviortrees.BTStatus;
 
-public class GetBig extends BTAction {
+public class GetSmall extends BTAction {
     private NPC npc;
 
-    public GetBig(NPC npc) {
+    public GetSmall(NPC npc) {
         this.npc = npc;
     }
 
     @Override
     protected BTStatus update(float elapsedTime) {
-		// System.out.println("NPC GET BIG");
-        npc.getBig();
+        npc.getSmall();
         return BTStatus.BH_SUCCESS;
     }
 }

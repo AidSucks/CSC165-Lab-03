@@ -1,4 +1,4 @@
-package myGame.server;
+package myGame.networking.server;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.joml.Quaternionf;
 
 import myGame.networking.*;
-
+import myGame.networking.client.*;
 import tage.networking.server.GameConnectionServer;
 import tage.networking.server.IClientInfo;
 

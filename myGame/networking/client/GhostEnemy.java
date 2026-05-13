@@ -1,4 +1,4 @@
-package myGame.client;
+package myGame.networking.client;
 
 import java.util.UUID;
 import org.joml.*;

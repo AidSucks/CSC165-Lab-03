@@ -1,6 +1,8 @@
-package myGame.networking;
+package myGame.networking.server;
 
 import java.util.Arrays;
+
+import myGame.networking.EntityInfo;
 
 public class GetEntitiesServerPacket extends GameServerPacket {
 

@@ -1,4 +1,4 @@
-package myGame.networking;
+package myGame.networking.client;
 
 import java.io.Serializable;
 import java.util.UUID;

@@ -1,12 +1,6 @@
-package myGame.server;
+package myGame.ai;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
-
-import myGame.client.GameClient;
+import myGame.networking.client.GameClient;
 import tage.ai.behaviortrees.*;
 
 public class NPCcontroller {
@@ -51,33 +45,6 @@ public class NPCcontroller {
     public void start() {
         lastTickTime = System.currentTimeMillis();
         lastThinkTime = System.currentTimeMillis();
-
-
-			Vector3f initialLocation = new Vector3f(
-				0,
-				5,
-				0
-			);
-
-			npc.setLocation(initialLocation.x(), initialLocation.y(), initialLocation.z());
-
-			hostClient.getEnemyManager().createEnemy(
-				npc.getID(), 
-				initialLocation,
-				(float) npc.getSize(),
-				npc.getState(),
-				new Quaternionf()
-			);
-
-			hostClient.sendCreateEnemy(
-				npc.getID(),
-				initialLocation,
-				new Quaternionf(),
-				npc.getState(),
-				(float) npc.getSize()
-			);
-
-			System.out.println("Spawned enemy");
 
 
 		/* 
