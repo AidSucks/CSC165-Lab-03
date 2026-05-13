@@ -7,24 +7,31 @@ import org.joml.Vector3f;
 
 public class UpdateEntityClientPacket extends GameClientPacket {
 
+	UUID entityID;
 	private Vector3f position;
 	private Quaternionf rotation;
 	private EntityType entityType;
+	private String animationState;
 
 	public UpdateEntityClientPacket(
-		UUID clientIDFrom, 
+		UUID clientIDFrom,
+		UUID entityID,
 		Vector3f position, 
 		Quaternionf rotation, 
-		EntityType type
+		EntityType type,
+		String animationState
 	) {
 		super(clientIDFrom);
+		this.entityID = entityID;
 		this.position = position;
 		this.rotation = rotation;
 		this.entityType = type;
 	}
 
+	public UUID getEntityID() { return this.entityID; }
 	public Vector3f getPosition() { return new Vector3f(position); }
 	public Quaternionf getRotation() { return new Quaternionf(rotation); }
 	public EntityType getEntityType() { return this.entityType; }
+	public String getAnimationState() { return this.animationState; }
 
 }

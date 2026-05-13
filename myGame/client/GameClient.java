@@ -8,6 +8,7 @@ import org.joml.*;
 
 import myGame.MyGame;
 import myGame.networking.*;
+import myGame.server.NPCcontroller;
 import tage.networking.client.GameConnectionClient;
 
 public class GameClient extends GameConnectionClient {
@@ -16,8 +17,11 @@ public class GameClient extends GameConnectionClient {
 	private MyGame game;
 	private GhostManager ghostManager;
 	private EnemyManager enemyManager;
+	private NPCcontroller npcController;
 
 	private boolean isConnected = false;
+
+	private boolean isHost = false;
 
 	public GameClient(InetAddress remoteAddr, int remotePort, MyGame game) throws IOException 
 	{
@@ -59,12 +63,6 @@ public class GameClient extends GameConnectionClient {
 			return;
 		}
 
-		else if(packet instanceof CreateNPCEntityServerPacket createNPCPacket) {
-			handleCreateNPC(createNPCPacket);
-		}
-		else if(packet instanceof UpdateNPCEntityServerPacket updateNPCPacket) {
-			handleUpdateNPC(updateNPCPacket);
-		}
 		if(packet instanceof DisconnectServerPacket disconnectPacket) {
 			handleDisconnect(disconnectPacket);
 		}
@@ -82,7 +80,10 @@ public class GameClient extends GameConnectionClient {
 
 	private void handleConnect(ConnectServerPacket connectPacket) {
 
-		if(!connectPacket.getIsConnected()) return;
+		if(connectPacket.getIsHost()) {
+			this.isHost = true;
+			this.setupHost();
+		}
 
 		System.out.println("Connected to Server");
 
@@ -105,18 +106,36 @@ public class GameClient extends GameConnectionClient {
 		if(createEntityPacket.getEntityType() == EntityType.PLAYER) {
 			this.ghostManager.createGhost(createEntityPacket.getEntityID(), createEntityPacket.getPosition());
 		}
-		
+		else if(createEntityPacket.getEntityType() == EntityType.ENEMY) {
+			this.enemyManager.createEnemy(
+				createEntityPacket.getEntityID(),
+				createEntityPacket.getPosition(),
+				createEntityPacket.getEntityScale(),
+				createEntityPacket.getAnimationState(),
+				createEntityPacket.getRotation()
+			);
+		}
 	}
 
 	private void handleUpdateEntity(UpdateEntityServerPacket updateEntityPacket) {
 
-		// TODO implement enemy logic
+		if(updateEntityPacket.getEntityType() == EntityType.ENEMY) {
+			enemyManager.updateEnemy(
+				updateEntityPacket.getEntityID(),
+				updateEntityPacket.getPosition(),
+				1f,
+				updateEntityPacket.getAnimationState(),
+				updateEntityPacket.getRotation()
+			);
+			return;
+		}
 
 		if(updateEntityPacket.getEntityType() == EntityType.PLAYER) {
 
 			UUID ghostID = updateEntityPacket.getEntityID();
 
 			this.ghostManager.updateGhostMove(ghostID, updateEntityPacket.getPosition(), updateEntityPacket.getRotation());
+			return;
 		}
 	}
 
@@ -134,40 +153,37 @@ public class GameClient extends GameConnectionClient {
 
 		this.isConnected = true;
 
-		// TODO implement enemy logic
-
 		EntityInfo[] entities = getEntitiesPacket.getEntities();
 
 		if(entities.length == 0) return;
 
 		for(EntityInfo e : entities) {
+
+			// Check if is current player
+			if(e.id.compareTo(clientUUID) == 0) continue;
+
 			if(e.type == EntityType.PLAYER) {
 				this.ghostManager.createGhost(e.id, e.position);
+			}
+			else if(e.type == EntityType.ENEMY) {
+				this.enemyManager.createEnemy(
+					e.id, 
+					e.position,
+					e.entityScale,
+					e.animationState,
+					e.rotation
+				);
 			}
 		}
 	}
 
-	private void handleCreateNPC(CreateNPCEntityServerPacket createNPCPacket) {
+	private void setupHost() {
 
-		enemyManager.createEnemy(
-			createNPCPacket.getEntityID(),
-			createNPCPacket.getPosition(),
-			(float) createNPCPacket.getSize(),
-			createNPCPacket.getState(),
-			createNPCPacket.getRotation()
-		);
+		this.npcController = new NPCcontroller(this);
+
+		this.npcController.start();
 	}
 
-	private void handleUpdateNPC(UpdateNPCEntityServerPacket updateNPCPacket) {
-
-		enemyManager.updateEnemy(
-			updateNPCPacket.getEntityID(),
-			updateNPCPacket.getPosition(),
-			(float) updateNPCPacket.getSize(),
-			updateNPCPacket.getState(),
-			updateNPCPacket.getRotation()
-		);
-	}
 
 	public void joinServer()
 	{
@@ -187,21 +203,61 @@ public class GameClient extends GameConnectionClient {
 		}
 	}
 
-	public void sendMove(Vector3f position, Quaternionf rotation)
-	{
+	public void sendMove(
+		UUID id, 
+		Vector3f position, 
+		Quaternionf rotation, 
+		EntityType entityType, 
+		String animation
+	) {
+		UUID uuid;
+
+		if(id == null || entityType == EntityType.PLAYER)
+			uuid = clientUUID;
+		else
+			uuid = id;
+
 		try {
 
 			sendPacket(new UpdateEntityClientPacket(
-				clientUUID, 
+				clientUUID,
+				uuid, 
 				position, 
 				rotation, 
-				EntityType.PLAYER
+				entityType,
+				animation
 			));
 
 		} catch(IOException ex) {
 			System.err.println(ex.getMessage());
 		}
 	}
+
+	public void sendCreateEnemy(
+		UUID id,
+		Vector3f initialPosition,
+		Quaternionf initialRotation,
+		String initialAnimation,
+		float entityScale
+	){
+		try {
+
+			sendPacket(new CreateEntityClientPacket(
+				clientUUID,
+				id, 
+				initialPosition, 
+				initialRotation, 
+				EntityType.ENEMY,
+				initialAnimation,
+				entityScale
+			));
+
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public boolean getIsHost() { return this.isHost; }
 
 	
 	// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++

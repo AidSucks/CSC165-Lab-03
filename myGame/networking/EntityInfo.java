@@ -7,10 +7,16 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class EntityInfo implements Serializable {
-		public UUID id;
-		public Vector3f position;
-		public Quaternionf rotation;
-		public EntityType type;
 
-		public EntityInfo() {}
+	public final UUID id;
+
+	public Vector3f position;
+	public Quaternionf rotation;
+	public EntityType type;
+	public String animationState;
+	public float entityScale;
+
+	public EntityInfo(UUID id) {
+		this.id = id;
 	}
+}

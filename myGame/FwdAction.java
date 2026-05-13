@@ -18,7 +18,7 @@ public class FwdAction extends AbstractInputAction {
     @Override
     public void performAction(float time, Event e) {
 
-		final float moveSpeed = 500f;
+		final float moveSpeed = 200f;
 		float keyValue = e.getValue();
 		
 		if (keyValue >  - .3 && keyValue < .3) {

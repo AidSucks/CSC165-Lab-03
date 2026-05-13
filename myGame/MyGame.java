@@ -19,6 +19,7 @@ import java.io.IOException;
 import org.joml. * ;
 
 import myGame.client.GameClient;
+import myGame.networking.EntityType;
 import tage.input. * ;
 import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
@@ -500,7 +501,11 @@ public class MyGame extends VariableFrameRateGame
 			Quaternionf rot = new Quaternionf();
 			this.avatar.getWorldRotation().getNormalizedRotation(rot);
 
-			this.gameClient.sendMove(this.avatar.getPhysicsObject().getLocation(), rot);
+			this.gameClient.sendMove(null, this.avatar.getPhysicsObject().getLocation(), rot, EntityType.PLAYER, "WALK");
+
+			if(this.gameClient.getIsHost()) {
+				
+			}
 		}
 		
 		// game time
@@ -967,6 +972,10 @@ public class MyGame extends VariableFrameRateGame
 	
 	public GameObject getTerrain() {
 		return terr;
+	}
+
+	public float getTerrainHeightAt(float x, float z) {
+		return terr.getHeight(x, z);
 	}
 	
 	

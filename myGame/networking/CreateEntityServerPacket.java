@@ -1,23 +1,28 @@
 package myGame.networking;
 
+import org.joml.Vector3f;
+
 import java.util.UUID;
 
-import org.joml.Vector3f;
 import org.joml.Quaternionf;
 
 
 public class CreateEntityServerPacket extends GameServerPacket {
 	
-	UUID entityID;
-	Vector3f position;
-	Quaternionf rotation;
-	EntityType entityType;
+	private UUID entityID;
+	private Vector3f position;
+	private Quaternionf rotation;
+	private EntityType entityType;
+	private String animationState;
+	private float entityScale;
 
 	public CreateEntityServerPacket(
-		UUID entityID, 
-		Vector3f position,
-		Quaternionf rotation,
-		EntityType type
+		UUID entityID,
+		Vector3f position, 
+		Quaternionf rotation, 
+		EntityType type,
+		String animationState,
+		float entityScale
 	) {
 		this.entityID = entityID;
 		this.position = position;
@@ -26,7 +31,9 @@ public class CreateEntityServerPacket extends GameServerPacket {
 	}
 
 	public UUID getEntityID() { return this.entityID; }
-	public Vector3f getPosition() { return new Vector3f(this.position); }
-	public Quaternionf getRotation() { return new Quaternionf(this.rotation); }
+	public Vector3f getPosition() { return new Vector3f(position); }
+	public Quaternionf getRotation() { return new Quaternionf(rotation); }
 	public EntityType getEntityType() { return this.entityType; }
+	public String getAnimationState() { return this.animationState; }
+	public float getEntityScale() { return this.entityScale; }
 }

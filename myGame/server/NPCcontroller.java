@@ -3,26 +3,27 @@ package myGame.server;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+
+import myGame.client.GameClient;
 import tage.ai.behaviortrees.*;
 
 public class NPCcontroller {
 
     private NPC npc;
-    private GameServer server;
+    private GameClient hostClient;
 
     private long lastTickTime;
     private long lastThinkTime;
 
-	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-	
-	
     private BehaviorTree bt = new BehaviorTree(BTCompositeType.SELECTOR);
 
     private boolean avatarNear = false;
 	private double avatarX, avatarY, avatarZ;
 
-    public NPCcontroller(GameServer server) {
-        this.server = server;
+    public NPCcontroller(GameClient hostClient) {
+        this.hostClient = hostClient;
         this.npc = new NPC();
 		setupBehaviorTree();
     }
@@ -51,20 +52,39 @@ public class NPCcontroller {
         lastTickTime = System.currentTimeMillis();
         lastThinkTime = System.currentTimeMillis();
 
-		scheduler.schedule(() -> {
 
-			npc.setLocation(0, 0, 0);
+			Vector3f initialLocation = new Vector3f(
+				0,
+				5,
+				0
+			);
 
-			server.sendCreateEnemy();
+			npc.setLocation(initialLocation.x(), initialLocation.y(), initialLocation.z());
+
+			hostClient.getEnemyManager().createEnemy(
+				npc.getID(), 
+				initialLocation,
+				(float) npc.getSize(),
+				npc.getState(),
+				new Quaternionf()
+			);
+
+			hostClient.sendCreateEnemy(
+				npc.getID(),
+				initialLocation,
+				new Quaternionf(),
+				npc.getState(),
+				(float) npc.getSize()
+			);
 
 			System.out.println("Spawned enemy");
 
-		}, 30, java.util.concurrent.TimeUnit.SECONDS);
 
+		/* 
 		scheduler.scheduleAtFixedRate(() -> {
 
 			npc.updateLocation();
-			server.sendUpdateEnemy();
+			//hostClient.sendUpdateEnemy();
 
 		}, 0, 25, java.util.concurrent.TimeUnit.MILLISECONDS);
 
@@ -82,6 +102,7 @@ public class NPCcontroller {
             avatarNear = false;
 
 		}, 0, 250, java.util.concurrent.TimeUnit.MILLISECONDS);
+		*/
     }
 	
     private void setupBehaviorTree() {

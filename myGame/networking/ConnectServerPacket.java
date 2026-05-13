@@ -2,11 +2,11 @@ package myGame.networking;
 
 public class ConnectServerPacket extends GameServerPacket {
 	
-	private boolean connectionSuccess;
+	private boolean isHost;
 
-	public ConnectServerPacket(boolean connectionSuccess) {
-		this.connectionSuccess = connectionSuccess;
+	public ConnectServerPacket(boolean isHost) {
+		this.isHost = isHost;
 	}
 
-	public boolean getIsConnected () { return this.connectionSuccess; }
+	public boolean getIsHost () { return this.isHost; }
 }
