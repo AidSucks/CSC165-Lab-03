@@ -1,26 +1,47 @@
 package myGame.ai;
 
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+
+import myGame.MyGame;
 import myGame.networking.client.GameClient;
 import tage.ai.behaviortrees.*;
 
 public class NPCcontroller {
 
+	private MyGame game;
     private NPC npc;
     private GameClient hostClient;
 
-    private long lastTickTime;
-    private long lastThinkTime;
+	private int maxEnemies = 1;
+	private int numEnemies = 0;
+
+	private float enemySpawnTimer = 0;
+	private float enemyThinkTimer = 0;
+	private float enemyUpdateTimer = 0;
+
+	private final float enemySpawnTime = 10f;
+	private final float enemyThinkTime = 0.250f;
+	private final float enemyUpdateTime = 0.025f;
+
+	private long currentThinkTime = 0;
+	private long lastThinkTime = 0;
 
     private BehaviorTree bt = new BehaviorTree(BTCompositeType.SELECTOR);
 
     private boolean avatarNear = false;
 	private double avatarX, avatarY, avatarZ;
 
-    public NPCcontroller(GameClient hostClient) {
+	private boolean isActive = false;
+
+    public NPCcontroller(GameClient hostClient, MyGame game) {
+		this.game = game;
         this.hostClient = hostClient;
         this.npc = new NPC();
 		setupBehaviorTree();
     }
+
+	public boolean isActive() { return this.isActive; }
 
     public NPC getNPC() {
         return npc;
@@ -42,35 +63,79 @@ public class NPCcontroller {
 		
 	}
 
-    public void start() {
-        lastTickTime = System.currentTimeMillis();
-        lastThinkTime = System.currentTimeMillis();
+	public void update(float deltaTime)
+	{
+		if(!this.isActive) return;
 
+		enemySpawnTimer += deltaTime;
+		enemyThinkTimer += deltaTime;
+		enemyUpdateTimer += deltaTime;
 
-		/* 
-		scheduler.scheduleAtFixedRate(() -> {
+		if(enemySpawnTimer >= enemySpawnTime) {
+
+			if(numEnemies < maxEnemies) {
+
+				Vector3f initialPosition = new Vector3f(
+					(float) npc.getX(),
+					game.getTerrain().getHeight((float) npc.getX(), (float) npc.getZ()),
+					(float) npc.getZ()
+				);
+
+				hostClient.sendCreateEnemy(
+					npc.getID(), 
+					initialPosition, 
+					new Quaternionf(), 
+					npc.getState(), 
+					(float) npc.getSize()
+				);
+				numEnemies += 1;
+			}
+
+			enemySpawnTimer = 0f;
+		}
+
+		if(enemyUpdateTimer >= enemyUpdateTime) {
 
 			npc.updateLocation();
-			//hostClient.sendUpdateEnemy();
 
-		}, 0, 25, java.util.concurrent.TimeUnit.MILLISECONDS);
+			Vector3f position = new Vector3f(
+				(float) npc.getX(),
+				game.getTerrain().getHeight((float) npc.getX(), (float) npc.getZ()),
+				(float) npc.getZ()
+			);
 
-        scheduler.scheduleAtFixedRate(() -> {
+			this.hostClient.sendUpdateEnemy(npc.getID(), position, new Quaternionf(), npc.getState());
 
-			long currentTime = System.currentTimeMillis();
+			enemyUpdateTimer = 0f;
+		}
 
-			float elapsedThinkMs = (currentTime - lastThinkTime);
+		if(enemyThinkTimer >= enemyThinkTime) {
+			
+			this.currentThinkTime = System.currentTimeMillis();
+			
+			float elapsedThinkMs = currentThinkTime - lastThinkTime;
 
-			lastThinkTime = currentTime;
+			lastThinkTime = currentThinkTime;
 
 			bt.update(elapsedThinkMs);
 
-            // reset after thinking
-            avatarNear = false;
+			avatarNear = false;
+			
+			enemyThinkTimer = 0f;
+		}
+	}
 
-		}, 0, 250, java.util.concurrent.TimeUnit.MILLISECONDS);
-		*/
+    public void start() {
+		this.isActive = true;
+
+		enemySpawnTimer = 0f;
+		enemyThinkTimer = 0f;
+		enemyUpdateTimer = 0f;
     }
+
+	public void stop() {
+		this.isActive = false;
+	}
 	
     private void setupBehaviorTree() {
         bt.insertAtRoot(new BTSequence(10));

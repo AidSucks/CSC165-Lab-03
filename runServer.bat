@@ -1,1 +1,1 @@
-java myGame/server/ServerInstance 9999
+java myGame/networking/server/ServerInstance 9999

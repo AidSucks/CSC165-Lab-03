@@ -18,6 +18,7 @@ import java.io.IOException;
 
 import org.joml. * ;
 
+import myGame.ai.NPCcontroller;
 import myGame.networking.EntityType;
 import myGame.networking.client.GameClient;
 import tage.input. * ;
@@ -29,6 +30,8 @@ public class MyGame extends VariableFrameRateGame
 	private static Engine engine;
 	private PhysicsEngine physicsEngine;
 	private IAudioManager audioManager;
+
+	private NPCcontroller npcController;
 
 	private InputManager im;
 	private GameClient gameClient;
@@ -516,17 +519,12 @@ public class MyGame extends VariableFrameRateGame
 
 			if(this.gameClient.getIsHost()) {
 				
-				if(enemySpawnTimer > 10f) {
-					enemySpawnTimer = 0;
-					this.gameClient.sendCreateEnemy(
-						UUID.randomUUID(),
-						new Vector3f(0, terr.getHeight(0, 0), 0),
-						new Quaternionf(), 
-						"IDLE",
-						0.05f
-					);
+				if(this.npcController == null) {
+					this.npcController = new NPCcontroller(this.gameClient, this);
+					this.npcController.start();
+				}else {
+					this.npcController.update(dt);
 				}
-
 			}
 		}
 		

@@ -28,6 +28,7 @@ public class UpdateEntityClientPacket extends GameClientPacket {
 		this.position = position;
 		this.rotation = rotation;
 		this.entityType = type;
+		this.animationState = animationState;
 	}
 
 	public UUID getEntityID() { return this.entityID; }

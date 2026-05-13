@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.joml.*;
 
 import myGame.MyGame;
-import myGame.ai.NPCcontroller;
 import myGame.networking.*;
 import myGame.networking.server.*;
 import tage.networking.client.GameConnectionClient;
@@ -18,7 +17,6 @@ public class GameClient extends GameConnectionClient {
 	private MyGame game;
 	private GhostManager ghostManager;
 	private EnemyManager enemyManager;
-	private NPCcontroller npcController;
 
 	private boolean isConnected = false;
 	private boolean checkIsNear = false;
@@ -92,7 +90,6 @@ public class GameClient extends GameConnectionClient {
 
 		if(connectPacket.getIsHost()) {
 			this.isHost = true;
-			this.setupHost();
 		}
 
 		System.out.println("Connected to Server");
@@ -133,7 +130,7 @@ public class GameClient extends GameConnectionClient {
 			enemyManager.updateEnemy(
 				updateEntityPacket.getEntityID(),
 				updateEntityPacket.getPosition(),
-				1f,
+				0.05f,
 				updateEntityPacket.getAnimationState(),
 				updateEntityPacket.getRotation()
 			);
@@ -190,13 +187,6 @@ public class GameClient extends GameConnectionClient {
 	private void handleCheckIsNear(GetEntitiesServerPacket getEntitiesPacket)
 	{
 		this.checkIsNear = false;
-	}
-
-	private void setupHost() {
-
-		this.npcController = new NPCcontroller(this);
-
-		this.npcController.start();
 	}
 
 
@@ -280,6 +270,31 @@ public class GameClient extends GameConnectionClient {
 		);
 	}
 
+	public void sendUpdateEnemy(
+		UUID id,
+		Vector3f position,
+		Quaternionf rotation,
+		String animationState
+	) {
+		try {
+
+			sendPacket(new UpdateEntityClientPacket(
+				clientUUID,
+				id, 
+				position, 
+				rotation, 
+				EntityType.ENEMY,
+				animationState
+			));
+
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+
+		this.enemyManager.updateEnemy(id, position, 0.05f, animationState, rotation);
+		this.enemyManager.updateAnimations();
+	}
+
 	public void sendDeleteEnemy(
 		UUID id,
 		EntityType type
@@ -295,6 +310,8 @@ public class GameClient extends GameConnectionClient {
 		} catch(IOException ex) {
 			System.err.println(ex.getMessage());
 		}
+
+		this.enemyManager.removeEnemy(id);
 	}
 
 	public void checkIsNear() {
