@@ -20,7 +20,7 @@ public class PushAction extends AbstractInputAction
 		
 		System.out.printf("push action\n");
 
-		float force = 60000.0f;
+		float force = 9000.0f;
 				System.out.printf("deltaTime %.2f \n", deltaTime);
 
 		player.push(game.getEnemy(), deltaTime * force);
