@@ -58,7 +58,7 @@ public class MyGame extends VariableFrameRateGame
 	private float beepTimer = 0.0f;
 	private float beepInterval = 2.0f;
 	
-	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
+	private int fluffyClouds, lakeIslands, mars, mars1, galaxy; // skyboxes 
 
 	private PhysicsObject terrainMesh, caps1P;
 
@@ -212,7 +212,8 @@ public class MyGame extends VariableFrameRateGame
 		lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands"); 
 		mars = (engine.getSceneGraph()).loadCubeMap("mars"); 
 		mars1 = (engine.getSceneGraph()).loadCubeMap("mars1"); 
-		(engine.getSceneGraph()).setActiveSkyBoxTexture(mars); 
+		galaxy = (engine.getSceneGraph()).loadCubeMap("galaxy"); 
+		(engine.getSceneGraph()).setActiveSkyBoxTexture(galaxy); 
 		(engine.getSceneGraph()).setSkyBoxEnabled(true); 
 	} 
 
@@ -466,7 +467,7 @@ public class MyGame extends VariableFrameRateGame
 		terr.setPhysicsObject(terrainMesh);
 		
 		engine.enableGraphicsWorldRender(); 
-		engine.enablePhysicsWorldRender();
+		// engine.enablePhysicsWorldRender();
 	}
 	
 	
