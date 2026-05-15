@@ -518,13 +518,8 @@ public class MyGame extends VariableFrameRateGame
 			this.gameClient.sendMove(null, this.avatar.getPhysicsObject().getLocation(), rot, EntityType.PLAYER, "WALK");
 
 			if(this.gameClient.getIsHost()) {
-				
-				if(this.npcController == null) {
-					this.npcController = new NPCcontroller(this.gameClient, this);
-					this.npcController.start();
-				}else {
-					this.npcController.update(dt);
-				}
+
+				this.gameClient.getController().update(dt);
 			}
 		}
 		

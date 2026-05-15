@@ -7,12 +7,14 @@ import java.util.UUID;
 import org.joml.*;
 
 import myGame.MyGame;
+import myGame.ai.NPCcontroller;
 import myGame.networking.*;
 import myGame.networking.server.*;
 import tage.networking.client.GameConnectionClient;
 
 public class GameClient extends GameConnectionClient {
 
+	private NPCcontroller controller;
 	private UUID clientUUID;
 	private MyGame game;
 	private GhostManager ghostManager;
@@ -34,17 +36,13 @@ public class GameClient extends GameConnectionClient {
 	}
 	
 	// getter
-	public GhostManager getGhostManager() {
-		return ghostManager;
-	}
-	
-	public EnemyManager getEnemyManager() {
-		return enemyManager;
-	}
+	public GhostManager getGhostManager() { return ghostManager; }
 
-	public boolean getIsConnected() {
-		return this.isConnected;
-	}
+	public NPCcontroller getController() { return this.controller; }
+	
+	public EnemyManager getEnemyManager() { return enemyManager; }
+
+	public boolean getIsConnected() { return this.isConnected; }
 
 	@Override
 	public void processPacket(Object object)
@@ -90,6 +88,8 @@ public class GameClient extends GameConnectionClient {
 
 		if(connectPacket.getIsHost()) {
 			this.isHost = true;
+			this.controller = new NPCcontroller(this, this.game);
+			this.controller.start();
 		}
 
 		System.out.println("Connected to Server");
@@ -186,6 +186,7 @@ public class GameClient extends GameConnectionClient {
 
 	private void handleCheckIsNear(GetEntitiesServerPacket getEntitiesPacket)
 	{
+		this.controller.setEntitiesFromServer(getEntitiesPacket.getEntities());
 		this.checkIsNear = false;
 	}
 
@@ -315,6 +316,8 @@ public class GameClient extends GameConnectionClient {
 	}
 
 	public void checkIsNear() {
+
+		if(!isHost) return;
 
 		try {
 			sendPacket(new GetEntitiesClientPacket(clientUUID));
