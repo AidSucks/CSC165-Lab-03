@@ -58,7 +58,7 @@ public class MyGame extends VariableFrameRateGame
 	private float beepTimer = 0.0f;
 	private float beepInterval = 2.0f;
 	
-	private int fluffyClouds, lakeIslands, mars, mars1; // skyboxes 
+	private int fluffyClouds, lakeIslands, mars, mars1, galaxy; // skyboxes 
 
 	private PhysicsObject terrainMesh, caps1P;
 
@@ -212,7 +212,8 @@ public class MyGame extends VariableFrameRateGame
 		lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands"); 
 		mars = (engine.getSceneGraph()).loadCubeMap("mars"); 
 		mars1 = (engine.getSceneGraph()).loadCubeMap("mars1"); 
-		(engine.getSceneGraph()).setActiveSkyBoxTexture(mars); 
+		galaxy = (engine.getSceneGraph()).loadCubeMap("galaxy"); 
+		(engine.getSceneGraph()).setActiveSkyBoxTexture(galaxy); 
 		(engine.getSceneGraph()).setSkyBoxEnabled(true); 
 	} 
 
@@ -275,7 +276,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void initializeLights()
-	{	Light.setGlobalAmbient(0.05f, 0.05f, 0.05f);
+	{	Light.setGlobalAmbient(0.2f, 0.2f, 0.2f);
 	
 		light1 = new Light();
 		light1.setType(Light.LightType.SPOTLIGHT);
@@ -295,10 +296,10 @@ public class MyGame extends VariableFrameRateGame
 
 		light2.setAmbient(0.0f, 0.0f, 0.0f);
 		light2.setDiffuse(1.0f, 1.0f, 0.8f);
-		light2.setSpecular(0.7f, 0.7f, 0.7f);	
+		light2.setSpecular(0.1f, 0.1f, 0.1f);	
 
-		light2.setCutoffAngle(10.0f);
-		light2.setOffAxisExponent(10.0f);
+		light2.setCutoffAngle(20.0f);
+		light2.setOffAxisExponent(20.0f);
 
 		light2.setLocation(new Vector3f(0.0f, 0.0f, 0.0f));
 		light2.setDirection(new Vector3f(0.0f, 0.0f, -1.0f));
@@ -771,12 +772,16 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f lightPos = new Vector3f(playerPos);
 		lightPos.y += 0.3f; // hand height
 
-		float lightDistance = 5.0f; 
+		float lightDistance = 3f; 
 		Vector3f targetPos = new Vector3f(playerPos);
 		targetPos.add(new Vector3f(forward).mul(lightDistance));
 
 		// Direction from flashlight position 
 		Vector3f lightDir = new Vector3f(targetPos).sub(lightPos);
+				// Vector3f avRight = avatar.getWorldRightVector();
+		
+		
+		// lightDir.normalize().rotateAxis((float) -Math.PI / 6, avRight.x(), avRight.y(), avRight.z());
 		lightDir.normalize();
 
 		light2.setLocation(lightPos);
