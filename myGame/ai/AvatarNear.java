@@ -11,7 +11,7 @@ public class AvatarNear extends BTCondition {
     private final NPC npc;
 	private EntityInfo[] entities;
 
-	private final float nearDistance = 2f;
+	private final float nearDistance = 5f;
 
     public AvatarNear(NPC npc, boolean toNegate) {
         super(toNegate);

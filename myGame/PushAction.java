@@ -17,13 +17,14 @@ public class PushAction extends AbstractInputAction
 	@Override
 	public void performAction(float deltaTime, Event event)
 	{
-		
+		/*
 		System.out.printf("push action\n");
 
 		float force = 9000.0f;
 				System.out.printf("deltaTime %.2f \n", deltaTime);
 
 		player.push(game.getEnemy(), deltaTime * force);
+		 */
 	}
 	
 }

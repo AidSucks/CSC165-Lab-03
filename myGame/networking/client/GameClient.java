@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.joml.*;
 
+import myGame.Bullet;
 import myGame.MyGame;
 import myGame.ai.NPCcontroller;
 import myGame.networking.*;
@@ -19,13 +20,14 @@ public class GameClient extends GameConnectionClient {
 	private MyGame game;
 	private GhostManager ghostManager;
 	private EnemyManager enemyManager;
+	private BulletManager bulletManager;
 
 	private boolean isConnected = false;
 	private boolean checkIsNear = false;
 
 	private boolean isHost = false;
 
-	public GameClient(InetAddress remoteAddr, int remotePort, MyGame game) throws IOException 
+	public GameClient(InetAddress remoteAddr, int remotePort, MyGame game, BulletManager bulletManager) throws IOException 
 	{
 		super(remoteAddr, remotePort, ProtocolType.UDP);
 
@@ -33,7 +35,10 @@ public class GameClient extends GameConnectionClient {
 		this.game = game;
 		this.ghostManager = new GhostManager(this.game);
 		this.enemyManager = new EnemyManager(this.game);
+		this.bulletManager = bulletManager;
 	}
+
+	public void setBulletManager(BulletManager mang) { this.bulletManager = mang; }
 	
 	// getter
 	public GhostManager getGhostManager() { return ghostManager; }
@@ -42,7 +47,11 @@ public class GameClient extends GameConnectionClient {
 	
 	public EnemyManager getEnemyManager() { return enemyManager; }
 
+	public BulletManager getBulletManager() { return this.bulletManager; }
+
 	public boolean getIsConnected() { return this.isConnected; }
+
+	public boolean getIsHost() { return this.isHost; }
 
 	@Override
 	public void processPacket(Object object)
@@ -122,6 +131,9 @@ public class GameClient extends GameConnectionClient {
 				createEntityPacket.getRotation()
 			);
 		}
+		else if(createEntityPacket.getEntityType() == EntityType.BULLET) {
+			bulletManager.addBullet(createEntityPacket.getEntityID(), createEntityPacket.getPosition(), createEntityPacket.getDirection(), true);
+		}
 	}
 
 	private void handleUpdateEntity(UpdateEntityServerPacket updateEntityPacket) {
@@ -144,6 +156,11 @@ public class GameClient extends GameConnectionClient {
 			this.ghostManager.updateGhostMove(ghostID, updateEntityPacket.getPosition(), updateEntityPacket.getRotation());
 			return;
 		}
+
+		if(updateEntityPacket.getEntityType() == EntityType.BULLET) {
+
+			this.bulletManager.updateServer(updateEntityPacket.getEntityID(), updateEntityPacket.getPosition());
+		}
 	}
 
 	private void handleDeleteEntity(DeleteEntityServerPacket deleteEntityPacket) {
@@ -153,6 +170,9 @@ public class GameClient extends GameConnectionClient {
 		}
 		else if(deleteEntityPacket.getEntityType() == EntityType.ENEMY) {
 			this.enemyManager.removeEnemy(deleteEntityPacket.getEntityID());
+		}
+		else if(deleteEntityPacket.getEntityType() == EntityType.BULLET) {
+			this.bulletManager.removeBullet(deleteEntityPacket.getEntityID());
 		}
 	}
 
@@ -180,6 +200,9 @@ public class GameClient extends GameConnectionClient {
 					e.animationState,
 					e.rotation
 				);
+			}
+			else if(e.type == EntityType.BULLET) {
+				this.bulletManager.addBullet(e.id, e.position, e.direction, true);
 			}
 		}
 	}
@@ -239,6 +262,37 @@ public class GameClient extends GameConnectionClient {
 		}
 	}
 
+	public void sendCreateBullet(Bullet bullet) {
+
+		try {
+			sendPacket(new CreateEntityClientPacket(
+				clientUUID, 
+				bullet.getID(), 
+				bullet.getWorldLocation(), 
+				new Quaternionf(),
+				EntityType.BULLET,
+				"NONE", 
+				0.25f,
+				bullet.getDirection()
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
+	public void sendDeleteBullet(Bullet bullet) {
+
+		try {
+			sendPacket(new DeleteEntityClientPacket(
+				clientUUID,
+				bullet.getID(),
+				EntityType.BULLET
+			));
+		} catch(IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
+
 	public void sendCreateEnemy(
 		UUID id,
 		Vector3f initialPosition,
@@ -255,7 +309,8 @@ public class GameClient extends GameConnectionClient {
 				initialRotation, 
 				EntityType.ENEMY,
 				initialAnimation,
-				entityScale
+				entityScale,
+				new Vector3f(1, 0, 0)
 			));
 
 		} catch(IOException ex) {
@@ -328,83 +383,5 @@ public class GameClient extends GameConnectionClient {
 		this.checkIsNear = true;
 	}
 
-	public boolean getIsHost() { return this.isHost; }
-
 	
-	// ++++++++++++++++++++++++++++++++++ NPC ++++++++++++++++++++++++++++++++++
-	
-	public void sendSpawnNPCRequest(Vector3f avatarPos) {
-		try {
-			sendPacket(String.join(
-				";",
-				"spawnNPC",
-				clientUUID.toString(),
-				String.valueOf(avatarPos.x),
-				String.valueOf(avatarPos.y),
-				String.valueOf(avatarPos.z)
-			));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private void runCreateNPC(String[] args) {
-		UUID npcID = UUID.fromString(args[0]);
-		
-		float x = Float.parseFloat(args[1]);
-		float z = Float.parseFloat(args[3]);
-		float y = game.getTerrain().getHeight(x, z);
-		float size = Float.parseFloat(args[4]);
-		String state = args[5];
-
-		Vector3f npcPos = new Vector3f(x, y, z);
-
-		checkAvatarNearNPC(npcPos);
-		
-		System.out.println("game client runCreateNPC");
-	}
-	
-	private void runMoveNPC(String[] args) {
-		UUID npcID = UUID.fromString(args[0]);
-		
-		float x = Float.parseFloat(args[1]);
-		float z = Float.parseFloat(args[3]);
-		float y = game.getTerrain().getHeight(x, z);
-		float size = Float.parseFloat(args[4]);
-		float yaw = Float.parseFloat(args[5]);
-		String state = args[6];
-
-		Vector3f npcPos = new Vector3f(x, y, z);
-		
-		checkAvatarNearNPC(npcPos);
-		
-		// System.out.println("game client runMoveNPC");
-	}
-	
-	private void checkAvatarNearNPC(Vector3f npcPos) {
-		Vector3f avatarPos = game.getAvatar().getWorldLocation();
-
-		float distance = avatarPos.distance(npcPos);
-
-		// System.out.println("Distance to NPC = " + distance);
-
-		if (distance < 3.0f) {
-			try {
-				sendPacket(String.join(
-					";",
-					"isnear",
-					clientUUID.toString(),
-					String.valueOf(avatarPos.x),
-					String.valueOf(avatarPos.y),
-					String.valueOf(avatarPos.z)
-				));
-				// System.out.println("client sent isnear");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	
-
 }

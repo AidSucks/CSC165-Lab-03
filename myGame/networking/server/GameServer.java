@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import myGame.networking.*;
 import myGame.networking.client.*;
@@ -62,6 +63,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 			player.animationState = "IDLE";
 			player.entityScale = 1f;
 			player.type = EntityType.PLAYER;
+			player.direction = new Vector3f(1, 0, 0);
 
 			this.activeEntities.put(clientID, player);
 
@@ -72,7 +74,8 @@ public class GameServer extends GameConnectionServer<UUID> {
 					player.rotation,
 					player.type,
 					player.animationState,
-					player.entityScale
+					player.entityScale,
+					player.direction
 				), 
 				clientID
 			);
@@ -123,6 +126,7 @@ public class GameServer extends GameConnectionServer<UUID> {
 		entity.animationState = createEntityPacket.getAnimationState();
 		entity.entityScale = createEntityPacket.getEntityScale();
 		entity.type = createEntityPacket.getEntityType();
+		entity.direction = createEntityPacket.getDirection();
 
 		this.activeEntities.put(createEntityPacket.getEntityID(), entity);
 
@@ -136,7 +140,8 @@ public class GameServer extends GameConnectionServer<UUID> {
 					entity.rotation,
 					entity.type,
 					entity.animationState,
-					entity.entityScale
+					entity.entityScale,
+					entity.direction
 				), 
 				createEntityPacket.getClientIDFrom()
 			);
@@ -182,6 +187,8 @@ public class GameServer extends GameConnectionServer<UUID> {
 			System.err.println("Could not delete entity: " + deleteEntityPacket.getEntityID());
 			return;
 		}
+
+		System.out.println("Deleted Entity: " + entity.id);
 
 		try {
 			forwardPacketToAll(new DeleteEntityServerPacket(

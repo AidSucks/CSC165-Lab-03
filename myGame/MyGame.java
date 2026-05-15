@@ -8,9 +8,7 @@ import tage.audio.Sound;
 import tage.audio.SoundType;
 import tage.shapes. * ;
 import java.util.ArrayList;
-import java.util.UUID; 
 
-import java.lang.Math;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.awt.event. * ;
@@ -18,8 +16,8 @@ import java.io.IOException;
 
 import org.joml. * ;
 
-import myGame.ai.NPCcontroller;
 import myGame.networking.EntityType;
+import myGame.networking.client.BulletManager;
 import myGame.networking.client.GameClient;
 import tage.input. * ;
 import tage.physics.PhysicsEngine;
@@ -31,34 +29,27 @@ public class MyGame extends VariableFrameRateGame
 	private PhysicsEngine physicsEngine;
 	private IAudioManager audioManager;
 
-	private NPCcontroller npcController;
-
 	private InputManager im;
 	private GameClient gameClient;
+
+	private BulletManager bulletManager;
 	
 	private boolean isxyzAxesVisible = true;
 	private boolean paused=false;
-	private boolean isGameStart=false;
 	private boolean isLightOn=false;
 	private boolean hasKey=false;
 	private boolean spaceshipActivated = false;
 	private boolean isBeepPlay = true;
 	
-	private int counter=0;
-
-	private float enemySpawnTimer = 0;
-
 	private static int serverPort = 9999;
 	private static InetAddress serverAddress;
 
 	private static double lastFrameTime, currFrameTime;
 
-	private double elapsTime;
-	
 	private float beepTimer = 0.0f;
 	private float beepInterval = 2.0f;
 	
-	private int fluffyClouds, lakeIslands, mars, mars1, galaxy; // skyboxes 
+	private int mars, mars1, galaxy; // skyboxes 
 
 	private PhysicsObject terrainMesh, caps1P;
 
@@ -72,9 +63,9 @@ public class MyGame extends VariableFrameRateGame
 	private Player avatar;
 	private ArrayList < GameObject > keys = new ArrayList < GameObject > ();
 
-	private GameObject enemy, x, y, z, terr, spaceship, key;
+	private GameObject x, y, z, terr, spaceship, key;
 	// shape
-	private ObjShape dolS, linxS, linyS, linzS, terrS, spaceshipS, keyS;
+	private ObjShape dolS, linxS, linyS, linzS, terrS, spaceshipS, keyS, bulletShape;
 	// texture
 	private TextureImage doltx, enemyTex, hills, floor, spaceshipTex, keyTex;
 	// light
@@ -91,21 +82,6 @@ public class MyGame extends VariableFrameRateGame
 	
 	// enemies
 	private AnimatedShape enemyS;
-	
-	private int maxEnemies = 100;
-	private float spawnTimer = 0.0f;
-	private float spawnWait = 2.0f; // spawn every 2 seconds
-	private boolean isEnemyHost = true; // testing enemies server game A true, game B false
-	private class LocalEnemy {
-		UUID id;
-		GameObject obj;
-
-		LocalEnemy(UUID id, GameObject obj) {
-			this.id = id;
-			this.obj = obj;
-		}
-	}
-	private ArrayList<LocalEnemy> enemies = new ArrayList<>();
 
 
 	public MyGame() { 
@@ -139,7 +115,11 @@ public class MyGame extends VariableFrameRateGame
 	{
 		try {
 
-			this.gameClient = new GameClient(serverAddress, serverPort, this);
+			this.gameClient = new GameClient(serverAddress, serverPort, this, null);
+
+			this.bulletManager = new BulletManager(gameClient, bulletShape);
+
+			this.gameClient.setBulletManager(this.bulletManager);
 
 		}catch(UnknownHostException ex) {
 			System.err.println(ex.getMessage());
@@ -181,6 +161,9 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadShapes(){
+
+		bulletShape = new Sphere();
+
 		dolS = new ImportedModel("dolphinHighPoly.obj");
 		spaceshipS = new ImportedModel("spaceship.obj");
 		keyS = new ImportedModel("key.obj");
@@ -208,8 +191,6 @@ public class MyGame extends VariableFrameRateGame
 	@Override 
 	public void loadSkyBoxes() 
 	{
-		fluffyClouds = (engine.getSceneGraph()).loadCubeMap("fluffyClouds"); 
-		lakeIslands = (engine.getSceneGraph()).loadCubeMap("lakeIslands"); 
 		mars = (engine.getSceneGraph()).loadCubeMap("mars"); 
 		mars1 = (engine.getSceneGraph()).loadCubeMap("mars1"); 
 		galaxy = (engine.getSceneGraph()).loadCubeMap("galaxy"); 
@@ -234,17 +215,6 @@ public class MyGame extends VariableFrameRateGame
 
 		// build avatar
 		avatar = new Player(dolS, doltx);
-		
-		// build enemy
-		enemy = new GameObject(GameObject.root(), enemyS, enemyTex);
-		initialTranslation = (new Matrix4f()).translation(0f, 5f, 0.5f);
-		enemy.setLocalTranslation(initialTranslation);
-		initialScale = (new Matrix4f()).scaling(0.05f);
-        enemy.setLocalScale(initialScale);
-		// initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f));
-        // enemy.setLocalRotation(initialRotation);
-		enemy.getRenderStates().setModelOrientationCorrection( (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(180.0f)));
-		enemyS.playAnimation("IDLE", 0.5f, AnimatedShape.EndType.LOOP, 0); 
 		
 		// build spaceship
 		spaceship = new GameObject(GameObject.root(), spaceshipS, spaceshipTex);
@@ -363,7 +333,6 @@ public class MyGame extends VariableFrameRateGame
 	public void initializeGame()
 	{	lastFrameTime = System.currentTimeMillis();
 		currFrameTime = System.currentTimeMillis();
-		elapsTime = 0.0;
 
 		// Process packets
 
@@ -371,6 +340,8 @@ public class MyGame extends VariableFrameRateGame
 		
 		im = engine.getInputManager();
 		orbitCamera = new CameraOrbit3D(leftCamera, avatar);
+
+		this.setupNetworking();
 
 		// Sound
 		footstepSound.setLocation(this.avatar.getWorldForwardVector());
@@ -388,6 +359,7 @@ public class MyGame extends VariableFrameRateGame
 		AxisTurnAction axisTurnAction = new AxisTurnAction(this);
 		TakeKeyAction takeKeyAction = new TakeKeyAction(this);
 		LightAction lightAction = new LightAction(this);
+		ShootAction shootAction = new ShootAction(avatar, this.bulletManager);
 		
 		// ----------------- Forward/Backward SECTION -----------------------------
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.W, fwdAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -423,7 +395,7 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._2, pushAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._3, lightAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		
-		this.setupNetworking();
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.Q, shootAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	}
 	
 	@Override
@@ -433,22 +405,6 @@ public class MyGame extends VariableFrameRateGame
 		
 		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
 		physicsEngine.setGravity(gravity);
-		
-		// --------------------enemy--------------------
-		float mass = 50.0f; 
-		float radius = 0.20f; 
-		float height = 0.2f; 
-		Vector3f loc; 
-		Quaternionf rot2; 
-		
-		loc = enemy.getWorldLocation();  
-		rot2 = new Quaternionf(); 
-		(enemy.getWorldRotation()).getNormalizedRotation(rot2); 
-		caps1P = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot2, 1, radius, height); 
-		caps1P.getRigidBody().setAngularFactor(new com.jme3.math.Vector3f(0, 0, 0));
-		caps1P.setDamping(0.5f,0.5f);
-		// caps1P.disableSleeping(); 
-		enemy.setPhysicsObject(caps1P);
 
 		// Initialize Physics objects for player
 		avatar.initializePhysics();
@@ -467,35 +423,7 @@ public class MyGame extends VariableFrameRateGame
 		terr.setPhysicsObject(terrainMesh);
 		
 		engine.enableGraphicsWorldRender(); 
-		// engine.enablePhysicsWorldRender();
-	}
-	
-	
-	private void spawnEnemy() {
-		
-		GameObject e = new GameObject(GameObject.root(), enemyS, enemyTex);
-
-		// get player position
-		Vector3f playerPos = avatar.getWorldLocation();
-
-		// random angle (circle around player)
-		float angle = (float)(Math.random() * Math.PI * 2);
-
-		// random distance from player
-		float distance = 5.0f + (float)(Math.random() * 10.0f);
-
-		float x = playerPos.x() + (float)Math.cos(angle) * distance;
-		float z = playerPos.z() + (float)Math.sin(angle) * distance;
-		float y = terr.getHeight(x, z);
-
-		e.setLocalTranslation(new Matrix4f().translation(x, y, z));
-		e.setLocalScale(new Matrix4f().scaling(0.05f));
-	
-	    UUID enemyID = UUID.randomUUID();
-
-		enemies.add(new LocalEnemy(enemyID, e));
-
-	
+		//engine.enablePhysicsWorldRender();
 	}
 
 	@Override
@@ -504,11 +432,6 @@ public class MyGame extends VariableFrameRateGame
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
 		float dt = (float) getDeltaTime();
-		elapsTime += dt;
-
-		int elapsTimeSec = Math.round((float)elapsTime);
-
-		this.enemySpawnTimer += dt;
 
 		if(this.gameClient != null) {
 			this.gameClient.processPackets();
@@ -532,10 +455,6 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 15, 55);
 		
-		Vector3f enemyLoc = enemy.getWorldLocation(); 
-		float enemyHeight = terr.getHeight(enemyLoc.x(), enemyLoc.z()); 
-		enemy.setLocalLocation(new Vector3f(enemyLoc.x(), enemyHeight, enemyLoc.z())); 
-		
 		if (!spaceshipActivated){
 			Vector3f spaceshipLoc = spaceship.getWorldLocation(); 
 			float spaceshipHeight = terr.getHeight(spaceshipLoc.x(), spaceshipLoc.z()); 
@@ -558,6 +477,8 @@ public class MyGame extends VariableFrameRateGame
 		// camera update
 		orbitCamera.updateCameraPosition();
 		updateOverHeadView();
+
+		this.bulletManager.updateLocal(dt);
 
 		for(GameObject go : engine.getSceneGraph().getGameObjects()) {
 
@@ -594,73 +515,6 @@ public class MyGame extends VariableFrameRateGame
 		audioManager.getEar().setLocation(avatar.getWorldLocation());
 		audioManager.getEar().setOrientation(this.leftCamera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
 		updateBeepSound(dt);
-
-		
-		// // --------------- enemy walk to player 
-		// if (isEnemyHost) {
-			// for (LocalEnemy le : enemies) {
-					// GameObject e = le.obj;
-					// Vector3f enemiesPos = e.getWorldLocation();
-					// Vector3f playerPos = avatar.getWorldLocation();
-
-					// // distance^2 = (x2 - x1)^2 + (y2 - y1)^2
-					// float dxPlayer = playerPos.x() - enemiesPos.x();
-					// float dzPlayer = playerPos.z() - enemiesPos.z();
-					// // distance^2 b/w player and enemy
-					// float distToPlayerSq = dxPlayer * dxPlayer + dzPlayer * dzPlayer;
-					
-					// float enemyAttackRange = 0.3f;
-
-					// // if player and enemy distance greater then enemy attack distance,
-					// // enemy walk to player
-					// if (distToPlayerSq > enemyAttackRange * enemyAttackRange) {
-						// // direction to the player
-						// Vector3f dir = new Vector3f(dxPlayer, 0, dzPlayer);
-						// // dir positive
-						// dir.normalize();
-
-						// // --------------- aviod enemy overlap ---------------
-						// Vector3f push = new Vector3f(0, 0, 0);
-						// float minDist = 0.3f;
-
-						// for (LocalEnemy otherEnemy : enemies) {
-							
-							// Vector3f otherEnemiesPos = otherEnemy.obj.getWorldLocation();
-
-							// float dxEnemies = enemiesPos.x() - otherEnemiesPos.x();
-							// float dzEnemies = enemiesPos.z() - otherEnemiesPos.z();
-							// float distToEnemiesSq = dxEnemies * dxEnemies + dzEnemies * dzEnemies;
-							// // System.out.println("distToEnemiesSq:" + distToEnemiesSq);
-
-							// // if enemies distance less then min enemies distance (enemies too close together),
-							// // push enemies back
-							// if (distToEnemiesSq < minDist * minDist && distToEnemiesSq > 0.0001f) {
-								// float dist = (float)Math.sqrt(distToEnemiesSq);
-								// push.x += dxEnemies / dist;
-								// push.z += dzEnemies / dist;
-							// }
-						// }
-						
-
-						// // System.out.println("push.lengthSquared():" + push.lengthSquared());
-						// if (push.lengthSquared() > 0.0001f) {
-							
-							// push.normalize();
-						// }
-						// float speed = 2.0f;
-						// float newX = enemiesPos.x() + (dir.x() + push.x) * speed * dt;
-						// float newZ = enemiesPos.z() + (dir.z() + push.z) * speed * dt;
-						// float newY = terr.getHeight(newX, newZ);
-						// Vector3f newPos = new Vector3f(newX, newY, newZ);
-						
-						// e.setLocalLocation(newPos);
-						
-						// if (gameClient != null) {
-							// gameClient.sendEnemyMove(le.id, newPos);
-						// }
-					// }
-			// }
-		// }
 	}
 
 	@Override
@@ -674,15 +528,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void keyPressed(KeyEvent e)
 	{	switch (e.getKeyCode())
-		{	case KeyEvent.VK_0:
-				System.out.println("pressed 0");
-				isGameStart = true;
-				break;
-			case KeyEvent.VK_T:
-				if (gameClient != null) {
-					Vector3f avatarPos = avatar.getWorldLocation();
-					gameClient.sendSpawnNPCRequest(avatarPos);
-				}
+		{	case KeyEvent.VK_T:
 				break;
 			case KeyEvent.VK_1:
 				paused = !paused;
@@ -945,11 +791,6 @@ public class MyGame extends VariableFrameRateGame
 	public Player getAvatar() {
         return avatar;
     }
-	
-	public GameObject getEnemy() {
-        return enemy;
-    }
-
 
 	public static Engine getEngine() {
 		return engine;

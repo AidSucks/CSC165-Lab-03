@@ -15,6 +15,7 @@ public class EntityInfo implements Serializable {
 	public EntityType type;
 	public String animationState;
 	public float entityScale;
+	public Vector3f direction;
 
 	public EntityInfo(UUID id) {
 		this.id = id;

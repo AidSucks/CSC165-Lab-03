@@ -15,6 +15,7 @@ public class CreateEntityClientPacket extends GameClientPacket {
 	private EntityType entityType;
 	private String animationState;
 	private float entityScale;
+	private Vector3f direction;
 
 	public CreateEntityClientPacket(
 		UUID clientIDFrom, 
@@ -23,7 +24,8 @@ public class CreateEntityClientPacket extends GameClientPacket {
 		Quaternionf rotation, 
 		EntityType type,
 		String animationState,
-		float entityScale
+		float entityScale,
+		Vector3f direction
 	) {
 		super(clientIDFrom);
 		this.entityID = entityID;
@@ -32,6 +34,7 @@ public class CreateEntityClientPacket extends GameClientPacket {
 		this.entityType = type;
 		this.animationState = animationState;
 		this.entityScale = entityScale;
+		this.direction = direction;
 	}
 
 	public UUID getEntityID() { return this.entityID; }
@@ -40,5 +43,5 @@ public class CreateEntityClientPacket extends GameClientPacket {
 	public EntityType getEntityType() { return this.entityType; }
 	public String getAnimationState() { return this.animationState; }
 	public float getEntityScale() { return this.entityScale; }
-	
+	public Vector3f getDirection() { return new Vector3f(this.direction); }
 }
