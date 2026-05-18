@@ -395,7 +395,7 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._2, pushAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._3, lightAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		
-		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._6, shootAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._5, shootAction, InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.Q, shootAction, InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	}
 	
